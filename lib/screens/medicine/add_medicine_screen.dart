@@ -15,7 +15,7 @@ class AddMedicineScreen extends StatefulWidget {
 
 class _AddMedicineScreenState extends State<AddMedicineScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   // Form controllers
   final _nameController = TextEditingController();
   final _genericNameController = TextEditingController();
@@ -28,7 +28,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
   final _minStockController = TextEditingController();
   final _storageController = TextEditingController();
   final _descriptionController = TextEditingController();
-  
+
   String _selectedCategory = 'Antibiotic';
   String _selectedUnit = 'bottles';
   DateTime _mfgDate = DateTime.now().subtract(const Duration(days: 30));
@@ -36,7 +36,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
   String? _selectedImage;
 
   int get remainingDays => _expiryDate.difference(DateTime.now()).inDays;
-  
+
   double get calculatedMargin {
     final purchase = double.tryParse(_purchasePriceController.text) ?? 0;
     final selling = double.tryParse(_sellingPriceController.text) ?? 0;
@@ -64,7 +64,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final provider = context.read<MedicineProvider>();
-    
+
     final success = await provider.addMedicine(
       name: _nameController.text.trim(),
       genericName: _genericNameController.text.trim(),
@@ -79,8 +79,12 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
       quantity: int.tryParse(_quantityController.text) ?? 0,
       minStockLevel: int.tryParse(_minStockController.text) ?? 10,
       unit: _selectedUnit,
-      storage: _storageController.text.trim().isEmpty ? null : _storageController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
+      storage: _storageController.text.trim().isEmpty
+          ? null
+          : _storageController.text.trim(),
+      description: _descriptionController.text.trim().isEmpty
+          ? null
+          : _descriptionController.text.trim(),
       image: _selectedImage,
     );
 
@@ -106,7 +110,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
   @override
   Widget build(BuildContext context) {
     final isDesktop = ResponsiveLayout.isDesktop(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Add Medicine'),
@@ -134,14 +138,17 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
                   children: [
                     const _SectionTitle('Basic'),
                     const SizedBox(height: 16),
-                    ImagePickerWidget(
-                      label: 'Tap to choose medicine photo',
-                      initialImage: _selectedImage,
-                      onImageSelected: (imageBase64) {
-                        setState(() {
-                          _selectedImage = imageBase64;
-                        });
-                      },
+                    Container(
+                      width: double.maxFinite,
+                      child: ImagePickerWidget(
+                        label: 'Tap to choose medicine photo',
+                        initialImage: _selectedImage,
+                        onImageSelected: (imageBase64) {
+                          setState(() {
+                            _selectedImage = imageBase64;
+                          });
+                        },
+                      ),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -182,14 +189,22 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
                         prefixIcon: Icon(Icons.category),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'Antibiotic', child: Text('Antibiotic')),
-                        DropdownMenuItem(value: 'Vitamin', child: Text('Vitamin')),
-                        DropdownMenuItem(value: 'Vaccine', child: Text('Vaccine')),
-                        DropdownMenuItem(value: 'Antiseptic', child: Text('Antiseptic')),
-                        DropdownMenuItem(value: 'Painkiller', child: Text('Painkiller')),
-                        DropdownMenuItem(value: 'Antifungal', child: Text('Antifungal')),
-                        DropdownMenuItem(value: 'Dewormer', child: Text('Dewormer')),
-                        DropdownMenuItem(value: 'Supplement', child: Text('Supplement')),
+                        DropdownMenuItem(
+                            value: 'Antibiotic', child: Text('Antibiotic')),
+                        DropdownMenuItem(
+                            value: 'Vitamin', child: Text('Vitamin')),
+                        DropdownMenuItem(
+                            value: 'Vaccine', child: Text('Vaccine')),
+                        DropdownMenuItem(
+                            value: 'Antiseptic', child: Text('Antiseptic')),
+                        DropdownMenuItem(
+                            value: 'Painkiller', child: Text('Painkiller')),
+                        DropdownMenuItem(
+                            value: 'Antifungal', child: Text('Antifungal')),
+                        DropdownMenuItem(
+                            value: 'Dewormer', child: Text('Dewormer')),
+                        DropdownMenuItem(
+                            value: 'Supplement', child: Text('Supplement')),
                       ],
                       onChanged: (value) {
                         setState(() {
@@ -438,12 +453,18 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
                               border: OutlineInputBorder(),
                             ),
                             items: const [
-                              DropdownMenuItem(value: 'bottles', child: Text('Bottles')),
-                              DropdownMenuItem(value: 'strips', child: Text('Strips')),
-                              DropdownMenuItem(value: 'packs', child: Text('Packs')),
-                              DropdownMenuItem(value: 'boxes', child: Text('Boxes')),
-                              DropdownMenuItem(value: 'vials', child: Text('Vials')),
-                              DropdownMenuItem(value: 'tubes', child: Text('Tubes')),
+                              DropdownMenuItem(
+                                  value: 'bottles', child: Text('Bottles')),
+                              DropdownMenuItem(
+                                  value: 'strips', child: Text('Strips')),
+                              DropdownMenuItem(
+                                  value: 'packs', child: Text('Packs')),
+                              DropdownMenuItem(
+                                  value: 'boxes', child: Text('Boxes')),
+                              DropdownMenuItem(
+                                  value: 'vials', child: Text('Vials')),
+                              DropdownMenuItem(
+                                  value: 'tubes', child: Text('Tubes')),
                             ],
                             onChanged: (value) {
                               setState(() {
@@ -529,7 +550,10 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+      style: Theme.of(context)
+          .textTheme
+          .titleMedium
+          ?.copyWith(fontWeight: FontWeight.bold),
     );
   }
 }

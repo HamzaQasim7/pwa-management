@@ -1,4 +1,4 @@
-# VetCare Suite (Frontend Only)
+# Aftab Distributions (Frontend Only)
 
 Flutter demo focused on high-fidelity UI for a veterinary distribution business. The project showcases feed distribution and medicine management workflows backed entirely by mock data and smooth Material 3 interactions.
 

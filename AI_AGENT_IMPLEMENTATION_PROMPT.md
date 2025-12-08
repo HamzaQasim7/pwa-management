@@ -1,11 +1,11 @@
 # 🤖 AI Agent Implementation Prompt
-## Full-Stack Implementation for VetCare Suite
+## Full-Stack Implementation for Aftab Distributions
 
 ---
 
 ## 📋 **TASK OVERVIEW**
 
-You are tasked with transforming the VetCare Suite Flutter application from a mock/prototype into a **fully functional, production-ready application** with:
+You are tasked with transforming the Aftab Distributions Flutter application from a mock/prototype into a **fully functional, production-ready application** with:
 
 1. **Local Database**: Hive (offline-first architecture)
 2. **State Management**: Provider (reactive state)

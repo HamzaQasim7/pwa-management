@@ -122,6 +122,7 @@ class OrderProvider with ChangeNotifier {
     required String orderType,
     String? notes,
     double discount = 0,
+    String paymentStatus = 'Pending',
   }) async {
     if (_cartItems.isEmpty) {
       _error = 'Cart is empty';
@@ -152,7 +153,7 @@ class OrderProvider with ChangeNotifier {
         subtotal: subtotal,
         discount: discount,
         total: total,
-        paymentStatus: 'Pending',
+        paymentStatus: paymentStatus,
         orderType: orderType,
         items: List.from(_cartItems),
         notes: notes,

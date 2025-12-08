@@ -120,8 +120,8 @@ class _ModernStatCardState extends State<ModernStatCard>
     final cardHeight = ResponsiveLayout.value<double>(
       context: context,
       mobile: 160.0, // Increased from 140 to 160
-      tablet: 170.0, // Increased from 150 to 170
-      desktop: 200.0, // Increased from 180 to 200
+      tablet: 190.0, // Increased from 150 to 170
+      desktop: 220.0, // Increased from 180 to 200
     );
 
     return AnimatedBuilder(

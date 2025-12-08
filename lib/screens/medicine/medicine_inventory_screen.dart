@@ -5,6 +5,7 @@ import '../../core/utils/model_converters.dart';
 import '../../data/models/medicine_model.dart';
 import '../../models/medicine.dart';
 import '../../presentation/providers/medicine_provider.dart';
+import '../../utils/responsive_layout.dart';
 import '../../widgets/medicine_card.dart';
 import '../../widgets/search_bar_widget.dart';
 import 'add_medicine_screen.dart';
@@ -135,9 +136,12 @@ class _MedicineInventoryScreenState extends State<MedicineInventoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = ResponsiveLayout.isDesktop(context);
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Medicine Inventory'),
+        centerTitle: isDesktop,
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
@@ -174,18 +178,23 @@ class _MedicineInventoryScreenState extends State<MedicineInventoryScreen> {
         ],
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: SearchBarWidget(
-                hint: 'Search medicines',
-                onChanged: (value) => setState(() => _searchQuery = value),
-                onFilterTap: _openFilters,
-              ),
+        child: Center(
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: isDesktop ? 1400 : double.infinity,
             ),
-            Expanded(
-              child: Consumer<MedicineProvider>(
+            child: Column(
+              children: [
+                Padding(
+                  padding: ResponsiveLayout.padding(context),
+                  child: SearchBarWidget(
+                    hint: 'Search medicines',
+                    onChanged: (value) => setState(() => _searchQuery = value),
+                    onFilterTap: _openFilters,
+                  ),
+                ),
+                Expanded(
+                  child: Consumer<MedicineProvider>(
                 builder: (context, provider, child) {
                   if (provider.isLoading) {
                     return const Center(child: CircularProgressIndicator());
@@ -233,18 +242,23 @@ class _MedicineInventoryScreenState extends State<MedicineInventoryScreen> {
                     onRefresh: provider.refresh,
                     child: LayoutBuilder(
                       builder: (context, constraints) {
-                        final crossAxisCount = constraints.maxWidth > 900
-                            ? 3
-                            : constraints.maxWidth > 600
-                                ? 2
-                                : 1;
+                        final crossAxisCount = ResponsiveLayout.gridCrossAxisCount(
+                          context,
+                          mobile: 1,
+                          tablet: 2,
+                          desktop: 3,
+                        );
                         return GridView.builder(
-                          padding: const EdgeInsets.all(20),
+                          padding: ResponsiveLayout.padding(context),
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: crossAxisCount,
-                            childAspectRatio: crossAxisCount == 1 ? 2.5 : 1.8,
-                            mainAxisSpacing: 16,
-                            crossAxisSpacing: 16,
+                            childAspectRatio: crossAxisCount == 1 
+                                ? 2.5 
+                                : isDesktop 
+                                    ? 1.6 
+                                    : 1.8,
+                            mainAxisSpacing: ResponsiveLayout.spacing(context),
+                            crossAxisSpacing: ResponsiveLayout.spacing(context),
                           ),
                           itemCount: filteredMedicines.length,
                           itemBuilder: (context, index) {
@@ -266,8 +280,10 @@ class _MedicineInventoryScreenState extends State<MedicineInventoryScreen> {
                   );
                 },
               ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(

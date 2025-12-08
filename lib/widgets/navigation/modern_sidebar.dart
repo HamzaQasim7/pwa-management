@@ -5,16 +5,6 @@ import '../../core/theme/app_shadows.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../utils/responsive_layout.dart';
-
-/// Modern Sidebar Navigation - 2025 Professional Design
-/// 
-/// Features:
-/// - Dark navy background (#0F172A)
-/// - Gradient logo with subtitle
-/// - Active state with emerald gradient
-/// - Hover states with smooth transitions
-/// - Notification badges
-/// - Bottom section with settings/notifications
 class ModernSidebar extends StatelessWidget {
   const ModernSidebar({
     super.key,

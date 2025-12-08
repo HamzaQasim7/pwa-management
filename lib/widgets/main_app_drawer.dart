@@ -10,7 +10,8 @@ import '../screens/notifications/notifications_screen.dart';
 import '../screens/settings/settings_screen.dart';
 
 class MainAppDrawer extends StatelessWidget {
-  const MainAppDrawer({super.key, required this.isDark, required this.onThemeChanged});
+  const MainAppDrawer(
+      {super.key, required this.isDark, required this.onThemeChanged});
 
   final bool isDark;
   final ValueChanged<bool> onThemeChanged;
@@ -32,7 +33,9 @@ class MainAppDrawer extends StatelessWidget {
                 children: [
                   CircleAvatar(radius: 32, child: Icon(Icons.pets, size: 32)),
                   SizedBox(height: 12),
-                  Text('VetCare Suite', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text('Aftab Distributions',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   Text('Smart operations cockpit'),
                 ],
               ),

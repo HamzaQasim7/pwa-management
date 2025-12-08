@@ -13,7 +13,7 @@ import 'package:share_plus/share_plus.dart';
 /// Professional Invoice Generator for 2025
 /// Usage: InvoiceGenerator.show(context, data)
 class InvoiceGenerator {
-  static const String companyName = 'VetCare Suite';
+  static const String companyName = 'Aftab Distributions';
   static const String companyAddress = '123 Business St, City, State 12345';
   static const String companyPhone = '+1 (555) 123-4567';
   static const String companyEmail = 'info@vetcaresuite.com';
@@ -243,7 +243,8 @@ class InvoiceGenerator {
                       children: [
                         _buildTotalRow('Subtotal', data.subtotal),
                         pw.SizedBox(height: 4),
-                        _buildTotalRow('Discount', -data.discount, isNegative: true),
+                        _buildTotalRow('Discount', -data.discount,
+                            isNegative: true),
                         pw.SizedBox(height: 4),
                         _buildTotalRow('Tax', data.tax),
                         pw.Divider(),
@@ -363,7 +364,7 @@ class InvoiceGenerator {
   static Future<void> share(InvoiceData data) async {
     try {
       final pdfBytes = await generatePDF(data);
-      
+
       if (kIsWeb) {
         // On web, print instead since file sharing is limited
         await Printing.layoutPdf(
@@ -380,7 +381,8 @@ class InvoiceGenerator {
       // Share the file
       await Share.shareXFiles(
         [XFile(file.path)],
-        text: 'Invoice #${data.invoiceNumber} from $companyName\nTotal: Rs ${data.total.toStringAsFixed(2)}',
+        text:
+            'Invoice #${data.invoiceNumber} from $companyName\nTotal: Rs ${data.total.toStringAsFixed(2)}',
         subject: 'Invoice #${data.invoiceNumber}',
       );
     } catch (e) {
@@ -533,7 +535,7 @@ class _InvoicePreviewState extends State<InvoicePreview> {
     final theme = Theme.of(context);
     final dateFormat = DateFormat('MMM dd, yyyy');
     final data = widget.data;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Invoice Preview'),
@@ -1112,4 +1114,3 @@ class _InvoicePreviewState extends State<InvoicePreview> {
     }
   }
 }
-

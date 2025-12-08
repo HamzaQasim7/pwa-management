@@ -3,9 +3,12 @@ import 'package:provider/provider.dart';
 
 import '../../data/models/customer_model.dart';
 import '../../presentation/providers/order_provider.dart';
+import '../../presentation/providers/customer_provider.dart';
+import '../../utils/responsive_layout.dart';
 import '../../widgets/status_badge.dart';
 import '../../widgets/loading_shimmer.dart';
 import '../../core/utils/date_formatter.dart';
+import 'add_payment_dialog.dart';
 
 class CustomerDetailScreen extends StatelessWidget {
   const CustomerDetailScreen({super.key, required this.customer});
@@ -14,33 +17,57 @@ class CustomerDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(customer.name),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Orders'),
-              Tab(text: 'Details'),
-            ],
+    final isDesktop = ResponsiveLayout.isDesktop(context);
+    
+    return Consumer<CustomerProvider>(
+      builder: (context, customerProvider, child) {
+        // Get latest customer data from provider
+        final updatedCustomer = customerProvider.allCustomers
+            .firstWhere(
+              (c) => c.id == customer.id,
+              orElse: () => customer,
+            );
+        
+        return DefaultTabController(
+          length: 2,
+          child: Scaffold(
+            appBar: AppBar(
+              title: Text(updatedCustomer.name),
+              centerTitle: isDesktop,
+              bottom: const TabBar(
+                tabs: [
+                  Tab(text: 'Orders'),
+                  Tab(text: 'Details'),
+                ],
+              ),
+            ),
+            body: Center(
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: isDesktop ? 1200 : double.infinity,
+                ),
+                child: TabBarView(
+                  children: [
+                    _OrdersTab(customer: updatedCustomer),
+                    _DetailsTab(customer: updatedCustomer),
+                  ],
+                ),
+              ),
+            ),
+            floatingActionButton: FloatingActionButton.extended(
+              heroTag: 'customer_detail_fab',
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AddPaymentDialog(customer: updatedCustomer),
+                );
+              },
+              label: const Text('Add Payment'),
+              icon: const Icon(Icons.attach_money),
+            ),
           ),
-        ),
-        body: TabBarView(
-          children: [
-            _OrdersTab(customer: customer),
-            _DetailsTab(customer: customer),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton.extended(
-          heroTag: 'customer_detail_fab',
-          onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Add payment flow coming soon.')),
-          ),
-          label: const Text('Add Payment'),
-          icon: const Icon(Icons.attach_money),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -78,9 +105,27 @@ class _OrdersTab extends StatelessWidget {
             .where((o) => o.customerId == customer.id)
             .toList();
 
-        return ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
+        // Calculate payment statistics
+        double totalPaid = 0;
+        double totalOwed = 0;
+        double totalOrderValue = 0;
+
+        for (final order in customerOrders) {
+          totalOrderValue += order.total;
+          totalPaid += order.paidAmount ?? 0;
+          totalOwed += order.remainingAmount;
+        }
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            final orderProvider = context.read<OrderProvider>();
+            final customerProvider = context.read<CustomerProvider>();
+            await orderProvider.loadOrders();
+            await customerProvider.loadCustomers();
+          },
+          child: ListView(
+            padding: ResponsiveLayout.padding(context),
+            children: [
             _InfoCard(
               title: 'Outstanding Balance',
               highlight: true,
@@ -101,6 +146,113 @@ class _OrdersTab extends StatelessWidget {
                               : Colors.grey,
                     ),
                   ],
+                ),
+                const SizedBox(height: 16),
+                // Payment Statistics
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Total Order Value',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Rs ${totalOrderValue.toStringAsFixed(0)}',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle,
+                                      size: 16,
+                                      color: Colors.green.shade700,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Total Paid',
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Rs ${totalPaid.toStringAsFixed(0)}',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Icon(
+                                      Icons.warning_amber,
+                                      size: 16,
+                                      color: Colors.orange.shade700,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Total Due',
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Rs ${totalOwed.toStringAsFixed(0)}',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange.shade700,
+                                  ),
+                                  textAlign: TextAlign.right,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -176,7 +328,8 @@ class _OrdersTab extends StatelessWidget {
                   }).toList(),
                 ),
               ),
-          ],
+            ],
+          ),
         );
       },
     );
@@ -204,7 +357,7 @@ class _DetailsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: ResponsiveLayout.padding(context),
       children: [
         _InfoCard(
           title: 'Contact Information',

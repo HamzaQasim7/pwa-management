@@ -10,6 +10,12 @@ import '../../theme/app_theme.dart';
 import '../../utils/responsive_layout.dart';
 import '../../widgets/dashboard/modern_stat_card.dart';
 import '../../widgets/stat_card.dart';
+import '../../widgets/custom_segmented_control.dart';
+import '../feed/feed_order_screen.dart';
+import '../feed/feed_products_screen.dart';
+import '../medicine/medicine_sales_screen.dart';
+import '../medicine/medicine_inventory_screen.dart';
+import 'reports_hub_screen.dart';
 
 // Logo URLs for dashboard header
 const _feedLogoUrl =
@@ -54,6 +60,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
     }
   }
 
+  
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -97,10 +104,18 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
           child: ListView(
             padding: ResponsiveLayout.padding(context),
             children: [
-            SegmentedButton<bool>(
+            CustomSegmentedControl<bool>(
               segments: const [
-                ButtonSegment(value: true, label: Text('Feed Dashboard')),
-                ButtonSegment(value: false, label: Text('Medicine Dashboard')),
+                SegmentData<bool>(
+                  value: true,
+                  label: 'Feed Dashboard',
+                  icon: Icons.grass,
+                ),
+                SegmentData<bool>(
+                  value: false,
+                  label: 'Medicine Dashboard',
+                  icon: Icons.medical_services,
+                ),
               ],
               selected: {showFeed},
               onSelectionChanged: (value) =>
@@ -232,23 +247,60 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
               children: [
                 _QuickAction(
                   icon: Icons.add_shopping_cart,
-                  label: 'New Feed Order',
-                  onTap: () {},
+                  label: showFeed ? 'New Feed Order' : 'New Medicine Sale',
+                  onTap: () {
+                    if (showFeed) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const FeedOrderScreen(),
+                        ),
+                      );
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const MedicineSalesScreen(),
+                        ),
+                      );
+                    }
+                  },
                 ),
                 _QuickAction(
                   icon: Icons.inventory_2_outlined,
-                  label: 'Add Product',
-                  onTap: () {},
+                  label: showFeed ? 'Feed Products' : 'Medicine Inventory',
+                  onTap: () {
+                    if (showFeed) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const FeedProductsScreen(),
+                        ),
+                      );
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const MedicineInventoryScreen(),
+                        ),
+                      );
+                    }
+                  },
                 ),
-                _QuickAction(
-                  icon: Icons.document_scanner_outlined,
-                  label: 'Print Invoice',
-                  onTap: () {},
-                ),
+               
                 _QuickAction(
                   icon: Icons.analytics_outlined,
                   label: 'Reports',
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ReportsHubScreen(
+                          drawerBuilder: widget.drawerBuilder,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

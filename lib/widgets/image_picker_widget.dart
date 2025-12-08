@@ -176,7 +176,7 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
     widget.onImageSelected?.call(null);
   }
 
-  Widget _buildImagePreview() {
+  Widget? _buildImagePreview() {
     if (_imageBase64 != null) {
       try {
         final bytes = base64Decode(_imageBase64!);

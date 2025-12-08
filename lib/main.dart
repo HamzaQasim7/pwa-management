@@ -33,13 +33,13 @@ import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Hive database
   await HiveService.init();
-  
+
   // Seed initial data if needed (DISABLED - No sample data)
   // await DataSeeder.seedAll();
-  
+
   runApp(const VetCareApp());
 }
 
@@ -120,7 +120,8 @@ class _VetCareAppState extends State<VetCareApp> {
 
     // Initialize repositories
     _customerRepository = CustomerRepositoryImpl(_customerLocalDatasource);
-    _feedProductRepository = FeedProductRepositoryImpl(_feedProductLocalDatasource);
+    _feedProductRepository =
+        FeedProductRepositoryImpl(_feedProductLocalDatasource);
     _medicineRepository = MedicineRepositoryImpl(_medicineLocalDatasource);
     _orderRepository = OrderRepositoryImpl(_orderLocalDatasource);
     _saleRepository = SaleRepositoryImpl(_saleLocalDatasource);
@@ -148,32 +149,32 @@ class _VetCareAppState extends State<VetCareApp> {
         ChangeNotifierProvider(
           create: (_) => SettingsProvider(),
         ),
-        
+
         // Sync provider
         ChangeNotifierProvider(
           create: (_) => SyncProvider(),
         ),
-        
+
         // Customer provider
         ChangeNotifierProvider(
           create: (_) => CustomerProvider(_customerRepository),
         ),
-        
+
         // Feed product provider
         ChangeNotifierProvider(
           create: (_) => FeedProductProvider(_feedProductRepository),
         ),
-        
+
         // Medicine provider
         ChangeNotifierProvider(
           create: (_) => MedicineProvider(_medicineRepository),
         ),
-        
+
         // Order provider
         ChangeNotifierProvider(
           create: (_) => OrderProvider(_orderRepository),
         ),
-        
+
         // Sale provider
         ChangeNotifierProvider(
           create: (_) => SaleProvider(_saleRepository),
@@ -182,7 +183,7 @@ class _VetCareAppState extends State<VetCareApp> {
       child: Consumer<SettingsProvider>(
         builder: (context, settings, child) {
           return MaterialApp(
-            title: 'VetCare Suite',
+            title: 'Aftab Distributions',
             debugShowCheckedModeBanner: false,
             themeMode: settings.isDarkMode ? ThemeMode.dark : ThemeMode.light,
             theme: ModernTheme.lightTheme,

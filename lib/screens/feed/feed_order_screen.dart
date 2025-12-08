@@ -26,13 +26,21 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
   CustomerModel? selectedCustomer;
   final Map<FeedProductModel, int> cart = {};
   String paymentStatus = 'Pending';
+  double _discountPercent = 0.0;
+  final TextEditingController _discountController = TextEditingController();
 
   double get subtotal => cart.entries
       .map((entry) => entry.key.rate * entry.value)
       .fold(0, (prev, amount) => prev + amount);
 
-  double get discount => subtotal * 0.05;
+  double get discount => subtotal * (_discountPercent / 100);
   double get total => subtotal - discount;
+
+  @override
+  void dispose() {
+    _discountController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -125,15 +133,12 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
       return;
     }
 
-    if (selectedCustomer == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a customer')),
-      );
-      return;
-    }
-
     final orderProvider = context.read<OrderProvider>();
     final feedProductProvider = context.read<FeedProductProvider>();
+
+    // Customer is optional - allow orders without customer (walk-in)
+    // Only show warning if customer was expected but not selected
+    // For now, we allow orders without customer
 
     // Validate stock availability before creating order
     for (final entry in cart.entries) {
@@ -150,11 +155,26 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
       }
     }
 
-    // Set customer and cart items
+    // Validate customer selection first
+    if (selectedCustomer == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select a customer to continue'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Clear existing cart first (this also clears customer, so we'll set it again)
+    orderProvider.clearCart();
+    
+    // Set customer AFTER clearing cart (since clearCart() clears the customer)
     orderProvider.setSelectedCustomer(selectedCustomer!.id, selectedCustomer!.name);
     
-    // Clear existing cart and add new items
-    orderProvider.clearCart();
+    // Add cart items to provider
     for (final entry in cart.entries) {
       final item = OrderItemModel(
         productId: entry.key.id,
@@ -167,9 +187,11 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
       orderProvider.addToCart(item);
     }
 
+    // Now create the order (customer is already set in provider)
     final success = await orderProvider.createOrder(
       orderType: 'feed',
       discount: discount,
+      paymentStatus: paymentStatus,
     );
 
     if (success && mounted) {
@@ -526,11 +548,40 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
                     ),
                     const Divider(height: 24),
                     _AmountRow(label: 'Subtotal', value: subtotal),
-                    const SizedBox(height: 8),
-                    _AmountRow(
-                      label: 'Discount (5%)',
-                      value: discount,
-                      color: Colors.green,
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: TextField(
+                            controller: _discountController,
+                            decoration: InputDecoration(
+                              labelText: 'Discount (%)',
+                              hintText: '0',
+                              prefixIcon: const Icon(Icons.percent),
+                              suffixText: '%',
+                              border: const OutlineInputBorder(),
+                            ),
+                            keyboardType: TextInputType.number,
+                            onChanged: (value) {
+                              setState(() {
+                                _discountPercent = double.tryParse(value) ?? 0.0;
+                                if (_discountPercent < 0) _discountPercent = 0;
+                                if (_discountPercent > 100) _discountPercent = 100;
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 1,
+                          child: _AmountRow(
+                            label: 'Discount',
+                            value: discount,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ],
                     ),
                     const Divider(height: 24),
                     _AmountRow(

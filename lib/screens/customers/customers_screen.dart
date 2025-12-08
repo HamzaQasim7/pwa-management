@@ -281,11 +281,14 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FilterChip(
-      label: Text(label),
+      label: Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+        fontWeight: FontWeight.w600,
+        color: selected ? Colors.white : Colors.black,
+      )),
       selected: selected,
       onSelected: (_) => onSelected(),
-      selectedColor: color?.withOpacity(0.2),
-      checkmarkColor: color,
+      selectedColor: selected ? color : Colors.grey.shade200,
+      checkmarkColor: selected ? Colors.white : Colors.black,
     );
   }
 }

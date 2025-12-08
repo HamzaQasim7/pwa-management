@@ -5,7 +5,7 @@
 
 ## 📋 **TASK OVERVIEW**
 
-You are tasked with **completing the remaining full-stack implementation** for VetCare Suite. The foundation is already in place (Hive, Providers, Repositories). Your job is to:
+You are tasked with **completing the remaining full-stack implementation** for Aftab Distributions. The foundation is already in place (Hive, Providers, Repositories). Your job is to:
 
 1. ✅ **Add Firebase Integration** (Remote datasources + Sync)
 2. ✅ **Update UI Screens** (Connect to providers, keep same design)
@@ -749,7 +749,7 @@ class _VetCareAppState extends State<VetCareApp> {
       child: Consumer<SettingsProvider>(
         builder: (context, settings, child) {
           return MaterialApp(
-            title: 'VetCare Suite',
+            title: 'Aftab Distributions',
             debugShowCheckedModeBanner: false,
             themeMode: settings.isDarkMode ? ThemeMode.dark : ThemeMode.light,
             theme: ModernTheme.lightTheme,

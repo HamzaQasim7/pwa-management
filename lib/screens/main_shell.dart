@@ -53,12 +53,12 @@ class _MainShellState extends State<MainShell> {
           selectedIcon: Icons.grass,
           label: 'Feed',
           badge: badges.Badge(
-            showBadge: true,
-            badgeContent: const Text('4', style: TextStyle(fontSize: 10, color: Colors.white)),
-            badgeStyle: const badges.BadgeStyle(
-              badgeColor: Colors.red,
-              padding: EdgeInsets.all(4),
-            ),
+            showBadge: false,
+            // badgeContent: const Text('4', style: TextStyle(fontSize: 10, color: Colors.white)),
+                // badgeStyle: const badges.BadgeStyle(
+                //   badgeColor: Colors.red,
+                //   padding: EdgeInsets.all(4),
+                // ),
           ),
         ),
         const NavDestination(
