@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../data/models/customer_model.dart';
 import '../../presentation/providers/customer_provider.dart';
 import '../../utils/responsive_layout.dart';
-import '../../widgets/customer_card.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/loading_shimmer.dart';
 import 'customer_detail_screen.dart';
@@ -257,6 +256,7 @@ class CustomersScreen extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'customers_screen_fab',
         onPressed: () => _showAddCustomerDialog(context),
         icon: const Icon(Icons.person_add_alt_1),
         label: const Text('Add Customer'),
@@ -410,7 +410,7 @@ class _CustomerListItem extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    '₹${customer.balance.abs().toStringAsFixed(0)}',
+                    'Rs ${customer.balance.abs().toStringAsFixed(0)}',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: isCredit

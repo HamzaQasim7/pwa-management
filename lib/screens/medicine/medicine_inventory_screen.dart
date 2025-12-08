@@ -93,7 +93,7 @@ class _MedicineInventoryScreenState extends State<MedicineInventoryScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Text('Price Range ₹${priceRange.start.toStringAsFixed(0)} - ₹${priceRange.end.toStringAsFixed(0)}'),
+                      Text('Price Range Rs ${priceRange.start.toStringAsFixed(0)} - Rs ${priceRange.end.toStringAsFixed(0)}'),
                       RangeSlider(
                         values: priceRange,
                         min: 0,
@@ -271,6 +271,7 @@ class _MedicineInventoryScreenState extends State<MedicineInventoryScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'medicine_inventory_fab',
         onPressed: _openAddMedicine,
         icon: const Icon(Icons.add),
         label: const Text('Add Medicine'),

@@ -103,7 +103,7 @@ class _AmountColumn extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          '₹${value.toStringAsFixed(0)}',
+          'Rs ${value.toStringAsFixed(0)}',
           style: ResponsiveTextStyles.bodyLarge(context).copyWith(
             fontWeight: highlight ? FontWeight.bold : FontWeight.w600,
             color: highlight ? theme.colorScheme.primary : null,

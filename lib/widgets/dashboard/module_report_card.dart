@@ -37,7 +37,7 @@ class ModuleReportCard extends StatefulWidget {
   /// Module type for color theming
   final String module;
   
-  /// Quick stats to display (e.g., ["234 reports", "₹8.4L", "156 customers"])
+  /// Quick stats to display (e.g., ["234 reports", "Rs 8.4L", "156 customers"])
   final List<QuickStat>? quickStats;
   
   /// Tap callback

@@ -97,14 +97,14 @@ class SettingsProvider with ChangeNotifier {
     _notificationsEnabled = true;
     _autoSyncEnabled = true;
     _language = 'en';
-    _currency = 'INR';
+    _currency = 'PKR';
     
     final box = HiveService.settingsBox;
     await box.put(SettingsKeys.isDarkMode, false);
     await box.put(SettingsKeys.notificationsEnabled, true);
     await box.put(SettingsKeys.autoSyncEnabled, true);
     await box.put(SettingsKeys.language, 'en');
-    await box.put(SettingsKeys.currency, 'INR');
+    await box.put(SettingsKeys.currency, 'PKR');
     
     notifyListeners();
   }
@@ -112,8 +112,8 @@ class SettingsProvider with ChangeNotifier {
   /// Get currency symbol
   String get currencySymbol {
     switch (_currency) {
-      case 'INR':
-        return '₹';
+      case 'PKR':
+        return 'Rs';
       case 'USD':
         return '\$';
       case 'EUR':
@@ -121,7 +121,7 @@ class SettingsProvider with ChangeNotifier {
       case 'GBP':
         return '£';
       default:
-        return '₹';
+        return 'Rs';
     }
   }
 

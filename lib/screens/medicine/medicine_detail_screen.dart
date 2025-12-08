@@ -83,6 +83,7 @@ class MedicineDetailScreen extends StatelessWidget {
           ),
         ),
         floatingActionButton: FloatingActionButton.extended(
+          heroTag: 'medicine_detail_fab',
           onPressed: () => _toast(context, 'Edit medicine'),
           icon: const Icon(Icons.edit),
           label: const Text('Edit'),
@@ -169,8 +170,8 @@ class _PricingSection extends StatelessWidget {
         _InfoCard(
           title: 'Prices',
           children: [
-            _InfoTile('Purchase', '₹${medicine.purchasePrice.toStringAsFixed(0)}'),
-            _InfoTile('Selling', '₹${medicine.sellingPrice.toStringAsFixed(0)}'),
+            _InfoTile('Purchase', 'Rs ${medicine.purchasePrice.toStringAsFixed(0)}'),
+            _InfoTile('Selling', 'Rs ${medicine.sellingPrice.toStringAsFixed(0)}'),
             _InfoTile('Discount', '${medicine.discount.toStringAsFixed(0)}%'),
             const SizedBox(height: 12),
             Center(

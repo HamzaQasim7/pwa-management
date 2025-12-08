@@ -56,21 +56,21 @@ class ReportsHubScreen extends StatelessWidget {
                       children: const [
                         ModernStatCard(
                           label: 'Feed Revenue',
-                          value: '₹8.4L',
+                          value: 'Rs 8.4L',
                           icon: Icons.grass,
                           trend: 'up',
                           trendValue: '+15%',
-                          comparison: 'vs last month: ₹7.3L',
+                          comparison: 'vs last month: Rs 7.3L',
                           progress: 0.84,
                           module: 'feed',
                         ),
                         ModernStatCard(
                           label: 'Pharmacy Revenue',
-                          value: '₹9.7L',
+                          value: 'Rs 9.7L',
                           icon: Icons.medical_services,
                           trend: 'up',
                           trendValue: '+12%',
-                          comparison: 'vs last month: ₹8.7L',
+                          comparison: 'vs last month: Rs 8.7L',
                           progress: 0.91,
                           module: 'medicine',
                         ),
@@ -104,8 +104,8 @@ class ReportsHubScreen extends StatelessWidget {
                       crossAxisSpacing: ResponsiveLayout.spacing(context),
                       childAspectRatio: 0.95, // Fixed: was 1.05, now 0.95
                       children: const [
-                        StatCard(icon: Icons.storefront, title: 'Feed Revenue', value: '₹8.4L'),
-                        StatCard(icon: Icons.local_hospital, title: 'Pharmacy Revenue', value: '₹9.7L'),
+                        StatCard(icon: Icons.storefront, title: 'Feed Revenue', value: 'Rs 8.4L'),
+                        StatCard(icon: Icons.local_hospital, title: 'Pharmacy Revenue', value: 'Rs 9.7L'),
                         StatCard(icon: Icons.people_alt, title: 'Customers', value: '423'),
                         StatCard(icon: Icons.stacked_bar_chart, title: 'Profitability', value: '37%'),
                       ],
@@ -125,7 +125,7 @@ class ReportsHubScreen extends StatelessWidget {
                 module: 'feed',
                 quickStats: const [
                   QuickStat(icon: Icons.bar_chart, value: '234 reports'),
-                  QuickStat(icon: Icons.attach_money, value: '₹8.4L'),
+                  QuickStat(icon: Icons.attach_money, value: 'Rs 8.4L'),
                   QuickStat(icon: Icons.people, value: '156 customers'),
                 ],
                 onTap: () => _open(context, const FeedReportsScreen()),
@@ -140,7 +140,7 @@ class ReportsHubScreen extends StatelessWidget {
                 module: 'medicine',
                 quickStats: const [
                   QuickStat(icon: Icons.analytics, value: '567 reports'),
-                  QuickStat(icon: Icons.monetization_on, value: '₹9.7L'),
+                  QuickStat(icon: Icons.monetization_on, value: 'Rs 9.7L'),
                   QuickStat(icon: Icons.inventory, value: '1,285 items'),
                 ],
                 onTap: () => _open(context, const MedicineReportsScreen()),

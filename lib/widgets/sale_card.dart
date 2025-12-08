@@ -59,7 +59,7 @@ class SaleCard extends StatelessWidget {
                   Text('Grand total', style: theme.textTheme.bodySmall),
                   const Spacer(),
                   Text(
-                    '₹${sale.total.toStringAsFixed(0)}',
+                    'Rs ${sale.total.toStringAsFixed(0)}',
                     style: theme.textTheme.titleLarge?.copyWith(
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.bold,
@@ -94,7 +94,7 @@ class _Amount extends StatelessWidget {
         Text(label, style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: 4),
         Text(
-          '₹${value.toStringAsFixed(0)}',
+          'Rs ${value.toStringAsFixed(0)}',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: highlight

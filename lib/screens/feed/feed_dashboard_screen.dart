@@ -6,7 +6,6 @@ import '../../presentation/providers/order_provider.dart';
 import '../../presentation/providers/customer_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/responsive_layout.dart';
-import '../../widgets/order_card.dart';
 import '../../widgets/stat_card.dart';
 import '../../widgets/loading_shimmer.dart';
 import '../../data/models/order_model.dart';
@@ -111,9 +110,9 @@ class FeedDashboardScreen extends StatelessWidget {
                       ),
                       children: [
                         StatCard(
-                          icon: Icons.currency_rupee,
+                          icon: Icons.attach_money,
                           title: "Today's Sales",
-                          value: '₹${_formatAmount(todaysSales)}',
+                          value: 'Rs ${_formatAmount(todaysSales)}',
                           trend: '$todaysOrders orders today',
                         ),
                         StatCard(
@@ -125,7 +124,7 @@ class FeedDashboardScreen extends StatelessWidget {
                         StatCard(
                           icon: Icons.hourglass_empty,
                           title: 'Pending',
-                          value: '₹${_formatAmount(pendingAmount)}',
+                          value: 'Rs ${_formatAmount(pendingAmount)}',
                           trend: '$pendingOrders awaiting payment',
                         ),
                         StatCard(
@@ -271,6 +270,7 @@ class FeedDashboardScreen extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'feed_dashboard_fab',
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const FeedOrderScreen()),
@@ -425,7 +425,7 @@ class _FeedOrderCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '₹${order.total.toStringAsFixed(0)}',
+                  'Rs ${order.total.toStringAsFixed(0)}',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.primary,
@@ -434,7 +434,7 @@ class _FeedOrderCard extends StatelessWidget {
                 if (order.discount > 0) ...[
                   const SizedBox(height: 2),
                   Text(
-                    '-₹${order.discount.toStringAsFixed(0)}',
+                    '-Rs ${order.discount.toStringAsFixed(0)}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: Colors.green,
                     ),

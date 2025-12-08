@@ -132,11 +132,11 @@ class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
             if (selectedCustomer != null)
               Card(
                 child: ListTile(
-                  title: Text(selectedCustomer!.shopName),
+                  title: Text(selectedCustomer!.shopName ?? selectedCustomer!.name),
                   subtitle: Text(selectedCustomer!.phone),
                   trailing: StatusBadge(
-                    label: selectedCustomer!.type,
-                    color: selectedCustomer!.type == 'premium' 
+                    label: selectedCustomer!.customerType,
+                    color: selectedCustomer!.customerType == 'VIP' 
                         ? Colors.green 
                         : Colors.blue,
                   ),
@@ -216,7 +216,7 @@ class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
                         const SizedBox(height: 8),
                         ListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: Text('₹${medicine.sellingPrice}'),
+                          title: Text('Rs ${medicine.sellingPrice}'),
                           subtitle: Text(
                             'Margin: ${medicine.margin.toStringAsFixed(1)}%',
                           ),
@@ -256,7 +256,7 @@ class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
               child: Card(
                 child: ListTile(
                   title: Text(entry.key.name),
-                  subtitle: Text('₹${entry.key.sellingPrice} • Profit ₹${(entry.key.sellingPrice - entry.key.purchasePrice).toStringAsFixed(0)}'),
+                  subtitle: Text('Rs ${entry.key.sellingPrice} • Profit Rs ${(entry.key.sellingPrice - entry.key.purchasePrice).toStringAsFixed(0)}'),
                   trailing: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -265,7 +265,7 @@ class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
                         min: 1,
                         onChanged: (value) => setState(() => billItems[entry.key] = value),
                       ),
-                      Text('Line: ₹${(entry.key.sellingPrice * entry.value).toStringAsFixed(0)}'),
+                      Text('Line: Rs ${(entry.key.sellingPrice * entry.value).toStringAsFixed(0)}'),
                     ],
                   ),
                 ),
@@ -319,7 +319,7 @@ class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerLeft,
-              child: Text('Change: ₹${(amountReceived - grandTotal).toStringAsFixed(0)}'),
+              child: Text('Change: Rs ${(amountReceived - grandTotal).toStringAsFixed(0)}'),
             ),
             const SizedBox(height: 12),
             Card(
@@ -327,7 +327,7 @@ class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
               child: ListTile(
                 leading: const Icon(Icons.receipt_long),
                 title: const Text('Invoice Preview'),
-                subtitle: Text('Total ₹${grandTotal.toStringAsFixed(0)}'),
+                subtitle: Text('Total Rs ${grandTotal.toStringAsFixed(0)}'),
                 trailing: IconButton(
                   icon: const Icon(Icons.open_in_new),
                   onPressed: () => Navigator.push(
@@ -447,7 +447,7 @@ class _AmountRow extends StatelessWidget {
           Text(label),
           const Spacer(),
           Text(
-            '₹${value.toStringAsFixed(0)}',
+            'Rs ${value.toStringAsFixed(0)}',
             style: TextStyle(
               fontWeight: highlighted ? FontWeight.bold : FontWeight.w600,
               color: highlighted ? Theme.of(context).colorScheme.primary : null,

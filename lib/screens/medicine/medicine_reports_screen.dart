@@ -107,12 +107,12 @@ class _DailyTab extends StatelessWidget {
                   StatCard(
                     icon: Icons.payments,
                     title: 'Sales',
-                    value: '₹${_formatValue(todaysSales)}',
+                    value: 'Rs ${_formatValue(todaysSales)}',
                   ),
                   StatCard(
                     icon: Icons.auto_graph,
                     title: 'Profit',
-                    value: '₹${_formatValue(todaysProfit)}',
+                    value: 'Rs ${_formatValue(todaysProfit)}',
                   ),
                   StatCard(
                     icon: Icons.shopping_basket,
@@ -122,7 +122,7 @@ class _DailyTab extends StatelessWidget {
                   StatCard(
                     icon: Icons.trending_up,
                     title: 'Avg ticket',
-                    value: '₹${_formatValue(avgTicket)}',
+                    value: 'Rs ${_formatValue(avgTicket)}',
                   ),
                 ],
               ),
@@ -276,7 +276,7 @@ class _MonthlyTab extends StatelessWidget {
                   StatCard(
                     icon: Icons.compare,
                     title: 'Revenue',
-                    value: '₹${_formatValue(totalSales)}',
+                    value: 'Rs ${_formatValue(totalSales)}',
                   ),
                 ],
               ),
@@ -294,7 +294,7 @@ class _MonthlyTab extends StatelessWidget {
                           DataCell(Text(medicine.name)),
                           DataCell(Text('${medicine.quantity}')),
                           DataCell(Text(
-                              '₹${(medicine.sellingPrice * medicine.quantity).toStringAsFixed(0)}')),
+                              'Rs ${(medicine.sellingPrice * medicine.quantity).toStringAsFixed(0)}')),
                         ]),
                       )
                       .toList(),
@@ -406,12 +406,12 @@ class _FinancialTab extends StatelessWidget {
                   StatCard(
                     icon: Icons.shopping_bag_outlined,
                     title: 'Purchases',
-                    value: '₹${_formatValue(medicineProvider.totalStockValueAtCost)}',
+                    value: 'Rs ${_formatValue(medicineProvider.totalStockValueAtCost)}',
                   ),
                   StatCard(
                     icon: Icons.attach_money,
                     title: 'Sales',
-                    value: '₹${_formatValue(totalSales)}',
+                    value: 'Rs ${_formatValue(totalSales)}',
                   ),
                   StatCard(
                     icon: Icons.percent,
@@ -421,7 +421,7 @@ class _FinancialTab extends StatelessWidget {
                   StatCard(
                     icon: Icons.warehouse,
                     title: 'Inventory value',
-                    value: '₹${_formatValue(inventoryValue)}',
+                    value: 'Rs ${_formatValue(inventoryValue)}',
                   ),
                 ],
               ),

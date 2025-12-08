@@ -455,7 +455,7 @@ class InvoicePreview extends StatelessWidget {
                                     ),
                                     Expanded(
                                       child: Text(
-                                        '₹${item.rate.toStringAsFixed(2)}',
+                                        'Rs ${item.rate.toStringAsFixed(2)}',
                                         textAlign: TextAlign.right,
                                         style: const TextStyle(
                                           fontSize: 14,
@@ -465,7 +465,7 @@ class InvoicePreview extends StatelessWidget {
                                     ),
                                     Expanded(
                                       child: Text(
-                                        '₹${item.amount.toStringAsFixed(2)}',
+                                        'Rs ${item.amount.toStringAsFixed(2)}',
                                         textAlign: TextAlign.right,
                                         style: const TextStyle(
                                           fontSize: 14,
@@ -526,23 +526,23 @@ class InvoicePreview extends StatelessWidget {
                               children: [
                                 _buildTotalRow(
                                   'Subtotal',
-                                  '₹${data.subtotal.toStringAsFixed(2)}',
+                                  'Rs ${data.subtotal.toStringAsFixed(2)}',
                                 ),
                                 const SizedBox(height: 8),
                                 _buildTotalRow(
                                   'Discount',
-                                  '-₹${data.discount.toStringAsFixed(2)}',
+                                  '-Rs ${data.discount.toStringAsFixed(2)}',
                                   color: Colors.green,
                                 ),
                                 const SizedBox(height: 8),
                                 _buildTotalRow(
                                   'Tax',
-                                  '₹${data.tax.toStringAsFixed(2)}',
+                                  'Rs ${data.tax.toStringAsFixed(2)}',
                                 ),
                                 const Divider(height: 24),
                                 _buildTotalRow(
                                   'TOTAL',
-                                  '₹${data.total.toStringAsFixed(2)}',
+                                  'Rs ${data.total.toStringAsFixed(2)}',
                                   isBold: true,
                                   fontSize: 18,
                                   color: theme.colorScheme.primary,

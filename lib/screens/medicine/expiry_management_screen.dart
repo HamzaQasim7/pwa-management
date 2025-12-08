@@ -171,7 +171,7 @@ class _ExpiryTab extends StatelessWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           child: ListTile(
             title: const Text('Summary'),
-            subtitle: Text('Total value ₹${totalValue.toStringAsFixed(0)} (${medicines.length} items)'),
+            subtitle: Text('Total value Rs ${totalValue.toStringAsFixed(0)} (${medicines.length} items)'),
             trailing: StatusBadge(
               label: isExpired ? 'Expired' : 'Due soon',
               color: isExpired ? Colors.red : Colors.orange,
@@ -228,7 +228,7 @@ class _ExpiryTab extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      Text('₹${medicine.sellingPrice.toStringAsFixed(0)}'),
+                      Text('Rs ${medicine.sellingPrice.toStringAsFixed(0)}'),
                     ],
                   ),
                 ),

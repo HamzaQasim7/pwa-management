@@ -3,12 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../../core/theme/app_colors.dart' as modern;
 import '../../presentation/providers/feed_product_provider.dart';
-
-// Logo URLs for dashboard header
-const _feedLogoUrl =
-    'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=200&q=60';
-const _medicineLogoUrl =
-    'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=200&q=60';
 import '../../presentation/providers/medicine_provider.dart';
 import '../../presentation/providers/order_provider.dart';
 import '../../presentation/providers/sale_provider.dart';
@@ -16,6 +10,12 @@ import '../../theme/app_theme.dart';
 import '../../utils/responsive_layout.dart';
 import '../../widgets/dashboard/modern_stat_card.dart';
 import '../../widgets/stat_card.dart';
+
+// Logo URLs for dashboard header
+const _feedLogoUrl =
+    'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=200&q=60';
+const _medicineLogoUrl =
+    'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=200&q=60';
 
 class HomeDashboardScreen extends StatefulWidget {
   const HomeDashboardScreen({super.key, required this.drawerBuilder});
@@ -46,11 +46,11 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
 
   String _formatAmount(double amount) {
     if (amount >= 100000) {
-      return '₹${(amount / 100000).toStringAsFixed(2)}L';
+      return 'Rs ${(amount / 100000).toStringAsFixed(2)}L';
     } else if (amount >= 1000) {
-      return '₹${(amount / 1000).toStringAsFixed(1)}K';
+      return 'Rs ${(amount / 1000).toStringAsFixed(1)}K';
     } else {
-      return '₹${amount.toStringAsFixed(0)}';
+      return 'Rs ${amount.toStringAsFixed(0)}';
     }
   }
 
@@ -311,7 +311,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                       trailing: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('₹${order.total.toStringAsFixed(0)}'),
+                          Text('Rs ${order.total.toStringAsFixed(0)}'),
                           Text(
                             order.paymentStatus,
                             style: TextStyle(

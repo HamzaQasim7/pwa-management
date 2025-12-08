@@ -33,11 +33,12 @@ class CustomerDetailScreen extends StatelessWidget {
           ],
         ),
         floatingActionButton: FloatingActionButton.extended(
+          heroTag: 'customer_detail_fab',
           onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Add payment flow coming soon.')),
           ),
           label: const Text('Add Payment'),
-          icon: const Icon(Icons.currency_rupee),
+          icon: const Icon(Icons.attach_money),
         ),
       ),
     );
@@ -87,7 +88,7 @@ class _OrdersTab extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      '₹${customer.balance.abs().toStringAsFixed(0)}',
+                      'Rs ${customer.balance.abs().toStringAsFixed(0)}',
                       style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(width: 12),
@@ -149,7 +150,7 @@ class _OrdersTab extends StatelessWidget {
                       cells: [
                         DataCell(Text(order.orderNumber)),
                         DataCell(Text(DateFormatter.formatDateShort(order.date))),
-                        DataCell(Text('₹${order.total.toStringAsFixed(0)}')),
+                        DataCell(Text('Rs ${order.total.toStringAsFixed(0)}')),
                         DataCell(
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -234,11 +235,11 @@ class _DetailsTab extends StatelessWidget {
             if (customer.creditLimit != null)
               _InfoRow(
                 label: 'Credit Limit',
-                value: '₹${customer.creditLimit!.toStringAsFixed(0)}',
+                value: 'Rs ${customer.creditLimit!.toStringAsFixed(0)}',
               ),
             _InfoRow(
               label: 'Balance',
-              value: '₹${customer.balance.abs().toStringAsFixed(0)} ${customer.balance > 0 ? "(Credit)" : customer.balance < 0 ? "(Due)" : ""}',
+              value: 'Rs ${customer.balance.abs().toStringAsFixed(0)} ${customer.balance > 0 ? "(Credit)" : customer.balance < 0 ? "(Due)" : ""}',
             ),
             _InfoRow(
               label: 'Member Since',

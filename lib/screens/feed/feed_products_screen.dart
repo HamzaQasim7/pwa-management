@@ -249,7 +249,7 @@ class _FeedProductsScreenState extends State<FeedProductsScreen> {
                     decoration: const InputDecoration(
                       labelText: 'Rate (per unit)',
                       border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.currency_rupee),
+                      prefixIcon: Icon(Icons.attach_money),
                     ),
                     keyboardType: TextInputType.number,
                   ),
@@ -556,6 +556,7 @@ class _FeedProductsScreenState extends State<FeedProductsScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'feed_products_fab',
         onPressed: _showAddProductSheet,
         label: const Text('Add Product'),
         icon: const Icon(Icons.add),
@@ -753,7 +754,7 @@ class _ProductCard extends StatelessWidget {
               const SizedBox(height: 4),
               // Price
               Text(
-                '₹${product.rate.toStringAsFixed(0)}/${product.unit}',
+                'Rs ${product.rate.toStringAsFixed(0)}/${product.unit}',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary,

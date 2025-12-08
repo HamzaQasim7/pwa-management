@@ -102,11 +102,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       ));
     }
 
-    if (orderProvider.totalOrderCount > 0) {
+    if (orderProvider.allOrders.isNotEmpty) {
       notifications.add(NotificationItem(
         id: 'summary_2',
         title: 'Order Summary',
-        subtitle: '${orderProvider.totalOrderCount} total orders processed',
+        subtitle: '${orderProvider.allOrders.length} total orders processed',
         category: 'Info',
         timestamp: '1d ago',
         isUnread: false,

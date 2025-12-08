@@ -80,14 +80,14 @@ class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
                     DataRow(cells: [
                       DataCell(Text('VetAmox 500')),
                       DataCell(Text('5')),
-                      DataCell(Text('₹280')),
-                      DataCell(Text('₹1,400')),
+                      DataCell(Text('Rs 280')),
+                      DataCell(Text('Rs 1,400')),
                     ]),
                     DataRow(cells: [
                       DataCell(Text('NeoVita Boost')),
                       DataCell(Text('3')),
-                      DataCell(Text('₹160')),
-                      DataCell(Text('₹480')),
+                      DataCell(Text('Rs 160')),
+                      DataCell(Text('Rs 480')),
                     ]),
                   ],
                 ),
@@ -97,9 +97,9 @@ class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: const [
-                      _Amount(label: 'Subtotal', value: '₹1,880'),
-                      _Amount(label: 'Discount', value: '₹90'),
-                      _Amount(label: 'Total', value: '₹1,790', highlight: true),
+                      _Amount(label: 'Subtotal', value: 'Rs 1,880'),
+                      _Amount(label: 'Discount', value: 'Rs 90'),
+                      _Amount(label: 'Total', value: 'Rs 1,790', highlight: true),
                     ],
                   ),
                 ),

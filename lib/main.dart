@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'core/database/hive_service.dart';
-import 'core/services/data_seeder.dart';
+// import 'core/services/data_seeder.dart'; // Disabled - No sample data
 import 'core/services/sync_service.dart';
 import 'core/network/network_info.dart';
 import 'core/theme/modern_theme.dart';
@@ -37,8 +37,8 @@ void main() async {
   // Initialize Hive database
   await HiveService.init();
   
-  // Seed initial data if needed
-  await DataSeeder.seedAll();
+  // Seed initial data if needed (DISABLED - No sample data)
+  // await DataSeeder.seedAll();
   
   runApp(const VetCareApp());
 }

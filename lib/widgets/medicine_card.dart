@@ -114,7 +114,7 @@ class MedicineCard extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    '₹${medicine.sellingPrice.toStringAsFixed(0)}',
+                    'Rs ${medicine.sellingPrice.toStringAsFixed(0)}',
                     style: theme.textTheme.headlineSmall?.copyWith(
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.bold,
@@ -123,7 +123,7 @@ class MedicineCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   if (medicine.discount > 0)
                     Text(
-                      '₹${medicine.purchasePrice.toStringAsFixed(0)}',
+                      'Rs ${medicine.purchasePrice.toStringAsFixed(0)}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         decoration: TextDecoration.lineThrough,
                         color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),

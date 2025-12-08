@@ -260,7 +260,7 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
                               ),
                             ),
                             StatusBadge(
-                              label: '₹${selectedCustomer!.balance.abs().toStringAsFixed(0)}',
+                              label: 'Rs ${selectedCustomer!.balance.abs().toStringAsFixed(0)}',
                               color: selectedCustomer!.balance > 0
                                   ? Colors.orange
                                   : Colors.green,
@@ -457,7 +457,7 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '₹${entry.key.rate.toStringAsFixed(0)} per ${entry.key.unit}',
+                                'Rs ${entry.key.rate.toStringAsFixed(0)} per ${entry.key.unit}',
                                 style: Theme.of(context).textTheme.bodySmall,
                                 overflow: TextOverflow.ellipsis,
                                 maxLines: 1,
@@ -474,7 +474,7 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          '₹${(entry.key.rate * entry.value).toStringAsFixed(0)}',
+                          'Rs ${(entry.key.rate * entry.value).toStringAsFixed(0)}',
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).colorScheme.primary,
@@ -647,7 +647,7 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
                     context,
                     Icons.payments,
                     'Grand Total',
-                    '₹${total.toStringAsFixed(2)}',
+                    'Rs ${total.toStringAsFixed(2)}',
                   ),
                   const SizedBox(height: 12),
                   _buildInfoTile(
@@ -742,7 +742,7 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
           maxLines: 1,
         ),
         subtitle: Text(
-          '₹${product.rate.toStringAsFixed(0)} • ${product.stock} ${product.unit} left',
+          'Rs ${product.rate.toStringAsFixed(0)} • ${product.stock} ${product.unit} left',
           style: Theme.of(context).textTheme.bodySmall,
           overflow: TextOverflow.ellipsis,
           maxLines: 1,
@@ -868,7 +868,7 @@ class _AmountRow extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           Text(
-            '₹${value.toStringAsFixed(2)}',
+            'Rs ${value.toStringAsFixed(2)}',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: highlight ? FontWeight.bold : FontWeight.w600,
                   color: color ?? (highlight

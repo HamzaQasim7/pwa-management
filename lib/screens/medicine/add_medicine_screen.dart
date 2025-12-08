@@ -291,7 +291,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
                               labelText: 'Purchase price',
                               border: OutlineInputBorder(),
                               prefixIcon: Icon(Icons.shopping_cart),
-                              prefixText: '₹ ',
+                              prefixText: 'Rs  ',
                             ),
                             keyboardType: TextInputType.number,
                             onChanged: (_) => setState(() {}),
@@ -313,8 +313,8 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
                             decoration: const InputDecoration(
                               labelText: 'Selling price',
                               border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.currency_rupee),
-                              prefixText: '₹ ',
+                              prefixIcon: Icon(Icons.attach_money),
+                              prefixText: 'Rs  ',
                             ),
                             keyboardType: TextInputType.number,
                             onChanged: (_) => setState(() {}),
@@ -490,6 +490,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
       floatingActionButton: Consumer<MedicineProvider>(
         builder: (context, provider, child) {
           return FloatingActionButton.extended(
+            heroTag: 'add_medicine_fab',
             onPressed: provider.isLoading ? null : _saveMedicine,
             icon: provider.isLoading
                 ? const SizedBox(

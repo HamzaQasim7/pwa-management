@@ -13,39 +13,36 @@ class NetworkInfo {
   /// Check if device is connected to the internet
   Future<bool> get isConnected async {
     final result = await _connectivity.checkConnectivity();
-    return _isConnectedFromResults(result);
+    return _isConnectedFromResult(result);
   }
 
   /// Stream of connectivity changes
   Stream<bool> get onConnectivityChanged {
-    return _connectivity.onConnectivityChanged.map(_isConnectedFromResults);
+    return _connectivity.onConnectivityChanged.map(_isConnectedFromResult);
   }
 
   /// Get current connectivity type
   Future<ConnectivityResult> get connectivityType async {
-    final results = await _connectivity.checkConnectivity();
-    return results.isNotEmpty ? results.first : ConnectivityResult.none;
+    return await _connectivity.checkConnectivity();
   }
 
-  /// Check if connected from connectivity results
-  bool _isConnectedFromResults(List<ConnectivityResult> results) {
-    if (results.isEmpty) return false;
-    return results.any((result) =>
-        result == ConnectivityResult.mobile ||
-        result == ConnectivityResult.wifi ||
-        result == ConnectivityResult.ethernet);
+  /// Check if connected from connectivity result
+  bool _isConnectedFromResult(ConnectivityResult result) {
+    return result != ConnectivityResult.none &&
+        result != ConnectivityResult.bluetooth &&
+        result != ConnectivityResult.other;
   }
 
   /// Check if connected via WiFi
   Future<bool> get isConnectedViaWifi async {
-    final results = await _connectivity.checkConnectivity();
-    return results.contains(ConnectivityResult.wifi);
+    final result = await _connectivity.checkConnectivity();
+    return result == ConnectivityResult.wifi;
   }
 
   /// Check if connected via mobile data
   Future<bool> get isConnectedViaMobile async {
-    final results = await _connectivity.checkConnectivity();
-    return results.contains(ConnectivityResult.mobile);
+    final result = await _connectivity.checkConnectivity();
+    return result == ConnectivityResult.mobile;
   }
 }
 

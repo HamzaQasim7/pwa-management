@@ -32,7 +32,7 @@ class ModernStatCard extends StatefulWidget {
   /// Label text (e.g., "Today's Sales")
   final String label;
   
-  /// Main value (e.g., "₹8.4L", "423", "37%")
+  /// Main value (e.g., "Rs 8.4L", "423", "37%")
   final String value;
   
   /// Icon to display
@@ -44,7 +44,7 @@ class ModernStatCard extends StatefulWidget {
   /// Trend value text (e.g., "+12%", "-5%")
   final String? trendValue;
   
-  /// Comparison text (e.g., "vs last month: ₹7.2L")
+  /// Comparison text (e.g., "vs last month: Rs 7.2L")
   final String? comparison;
   
   /// Progress value (0.0 to 1.0)

@@ -73,7 +73,7 @@ class _SummaryTab extends StatelessWidget {
     return Consumer2<OrderProvider, CustomerProvider>(
       builder: (context, orderProvider, customerProvider, child) {
         final revenue = orderProvider.totalRevenue;
-        final orders = orderProvider.totalOrderCount;
+        final orders = orderProvider.allOrders.length;
         final customers = customerProvider.allCustomers.length;
 
         // Calculate contribution by category from products
@@ -116,7 +116,7 @@ class _SummaryTab extends StatelessWidget {
                   StatCard(
                     icon: Icons.attach_money,
                     title: 'Revenue',
-                    value: '₹${_formatValue(revenue)}',
+                    value: 'Rs ${_formatValue(revenue)}',
                   ),
                   StatCard(
                     icon: Icons.shopping_bag,
@@ -177,7 +177,7 @@ class _ProductsTab extends StatelessWidget {
         final categoryValues = <String, double>{};
         for (final product in provider.allProducts) {
           categoryValues[product.category] =
-              (categoryValues[product.category] ?? 0) + product.sellingPrice * product.quantity;
+              (categoryValues[product.category] ?? 0) + product.rate * product.stock;
         }
 
         final sortedCategories = categoryValues.entries.toList()
@@ -250,11 +250,11 @@ class _CustomersTab extends StatelessWidget {
         final customerOrders = <String, int>{};
         final customerValue = <String, double>{};
         for (final order in orderProvider.allOrders) {
-          if (order.customerId != null) {
-            customerOrders[order.customerId!] =
-                (customerOrders[order.customerId!] ?? 0) + 1;
-            customerValue[order.customerId!] =
-                (customerValue[order.customerId!] ?? 0) + order.totalAmount;
+          if (order.customerId.isNotEmpty) {
+            customerOrders[order.customerId] =
+                (customerOrders[order.customerId] ?? 0) + 1;
+            customerValue[order.customerId] =
+                (customerValue[order.customerId] ?? 0) + order.total;
           }
         }
 
@@ -292,7 +292,7 @@ class _CustomersTab extends StatelessWidget {
                             DataCell(Text(customer.name)),
                             DataCell(Text('${customerOrders[customer.id] ?? 0}')),
                             DataCell(Text(
-                              '₹${(customerValue[customer.id] ?? 0).toStringAsFixed(0)}',
+                              'Rs ${(customerValue[customer.id] ?? 0).toStringAsFixed(0)}',
                             )),
                           ],
                         ),
@@ -322,9 +322,9 @@ class _ProfitTab extends StatelessWidget {
         // Create weekly trend (last 7 days)
         for (int i = 0; i < 7; i++) {
           final dayProfit = orders.where((o) {
-            final daysAgo = DateTime.now().difference(o.orderDate).inDays;
+            final daysAgo = DateTime.now().difference(o.date).inDays;
             return daysAgo == i;
-          }).fold<double>(0, (sum, o) => sum + o.totalAmount * 0.15);
+          }).fold<double>(0, (sum, o) => sum + o.total * 0.15);
           
           trendData.add(FlSpot((6 - i).toDouble(), dayProfit > 0 ? dayProfit : (i + 2) * 5.0));
         }

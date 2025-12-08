@@ -375,7 +375,7 @@ class _CustomerFormState extends State<_CustomerForm> {
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.account_balance_wallet),
                 hintText: '0',
-                prefixText: '₹ ',
+                prefixText: 'Rs  ',
               ),
               keyboardType: TextInputType.number,
             ),

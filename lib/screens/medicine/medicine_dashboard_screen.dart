@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/models/sale_model.dart';
 import '../../presentation/providers/medicine_provider.dart';
 import '../../presentation/providers/sale_provider.dart';
 import '../../theme/app_theme.dart';
@@ -26,16 +27,39 @@ class MedicineDashboardScreen extends StatefulWidget {
 class _MedicineDashboardScreenState extends State<MedicineDashboardScreen> {
   String range = '30D';
 
-  List<FlSpot> _generateTrendData(String range) {
-    // Generate sample trend data based on range
-    final count = range == '7D' ? 7 : range == '30D' ? 30 : 12;
-    final baseValue = range == '7D' ? 60.0 : range == '30D' ? 40.0 : 50.0;
+  List<FlSpot> _generateTrendData(String range, List<SaleModel> sales) {
+    // Generate real trend data from sales
+    final now = DateTime.now();
+    final days = range == '7D' ? 7 : range == '30D' ? 30 : 365;
+    final startDate = DateTime(now.year, now.month, now.day).subtract(Duration(days: days));
     
-    return List.generate(count, (i) {
-      // Create a realistic-looking trend with some variation
-      final variation = (i % 3 + 1) * 8.0 + (i % 5) * 3.0;
-      return FlSpot(i.toDouble(), baseValue + variation);
-    });
+    // Group sales by day
+    final dailySales = <int, double>{}; // Use day index as key
+    for (final sale in sales) {
+      final saleDate = DateTime(sale.date.year, sale.date.month, sale.date.day);
+      if (saleDate.isAfter(startDate) || saleDate.isAtSameMomentAs(startDate)) {
+        final daysSinceStart = saleDate.difference(startDate).inDays;
+        dailySales[daysSinceStart] = (dailySales[daysSinceStart] ?? 0) + sale.total;
+      }
+    }
+    
+    // Create data points
+    final spots = <FlSpot>[];
+    final interval = range == '7D' ? 1 : range == '30D' ? 1 : 30; // Days per point
+    final pointCount = (days / interval).ceil();
+    
+    for (int i = 0; i < pointCount; i++) {
+      final dayIndex = i * interval;
+      final daySales = dailySales[dayIndex] ?? 0.0;
+      spots.add(FlSpot(i.toDouble(), daySales));
+    }
+    
+    // If no data, return empty spots
+    if (spots.isEmpty || spots.every((spot) => spot.y == 0)) {
+      return [FlSpot(0, 0), FlSpot(1, 0)];
+    }
+    
+    return spots;
   }
 
   @override
@@ -116,12 +140,12 @@ class _MedicineDashboardScreenState extends State<MedicineDashboardScreen> {
                         StatCard(
                           icon: Icons.payments,
                           title: "Today's Sales",
-                          value: '₹${_formatAmount(todaysSales)}',
+                          value: 'Rs ${_formatAmount(todaysSales)}',
                         ),
                         StatCard(
                           icon: Icons.trending_up,
                           title: "Today's Profit",
-                          value: '₹${_formatAmount(todaysProfit)}',
+                          value: 'Rs ${_formatAmount(todaysProfit)}',
                           trend: saleProvider.todaysSalesCount > 0
                               ? '${saleProvider.todaysSalesCount} sales'
                               : null,
@@ -129,12 +153,12 @@ class _MedicineDashboardScreenState extends State<MedicineDashboardScreen> {
                         StatCard(
                           icon: Icons.calendar_view_month,
                           title: 'Total Sales',
-                          value: '₹${_formatAmount(totalSales)}',
+                          value: 'Rs ${_formatAmount(totalSales)}',
                         ),
                         StatCard(
                           icon: Icons.ssid_chart,
                           title: 'Total Profit',
-                          value: '₹${_formatAmount(totalProfit)}',
+                          value: 'Rs ${_formatAmount(totalProfit)}',
                         ),
                         StatCard(
                           icon: Icons.percent,
@@ -207,28 +231,56 @@ class _MedicineDashboardScreenState extends State<MedicineDashboardScreen> {
                           ],
                         ),
                         SizedBox(height: ResponsiveLayout.spacing(context)),
-                        SizedBox(
-                          height: ResponsiveLayout.value<double>(
-                            context: context,
-                            mobile: 180.0,
-                            tablet: 220.0,
-                            desktop: 260.0,
-                          ),
-                          child: LineChart(
-                          LineChartData(
-                            borderData: FlBorderData(show: false),
-                            titlesData: const FlTitlesData(show: false),
-                            lineBarsData: [
-                              LineChartBarData(
-                                spots: _generateTrendData(range),
-                                isCurved: true,
-                                color: AppColors.medSecondary,
-                                barWidth: 4,
-                                dotData: const FlDotData(show: false),
+                        Consumer<SaleProvider>(
+                          builder: (context, saleProvider, child) {
+                            final sales = saleProvider.allSales;
+                            final trendData = _generateTrendData(range, sales);
+                            
+                            return SizedBox(
+                              height: ResponsiveLayout.value<double>(
+                                context: context,
+                                mobile: 180.0,
+                                tablet: 220.0,
+                                desktop: 260.0,
                               ),
-                            ],
-                            ),
-                          ),
+                              child: trendData.isEmpty
+                                  ? Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.show_chart,
+                                            size: 48,
+                                            color: Colors.grey[400],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'No sales data available',
+                                            style: TextStyle(
+                                              color: Colors.grey[600],
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : LineChart(
+                                      LineChartData(
+                                        borderData: FlBorderData(show: false),
+                                        titlesData: const FlTitlesData(show: false),
+                                        lineBarsData: [
+                                          LineChartBarData(
+                                            spots: trendData,
+                                            isCurved: true,
+                                            color: AppColors.medSecondary,
+                                            barWidth: 4,
+                                            dotData: const FlDotData(show: false),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -389,6 +441,7 @@ class _MedicineDashboardScreenState extends State<MedicineDashboardScreen> {
         ),
       ),
       floatingActionButton: SpeedDial(
+        heroTag: 'medicine_dashboard_speeddial',
         icon: Icons.add,
         activeIcon: Icons.close,
         backgroundColor: Theme.of(context).colorScheme.primary,

@@ -84,7 +84,7 @@ class CustomerCard extends StatelessWidget {
                 children: [
                   StatusBadge(
                     label:
-                        '₹${customer.balance.toStringAsFixed(0).replaceAll('-', '')}',
+                        'Rs ${customer.balance.toStringAsFixed(0).replaceAll('-', '')}',
                     color: customer.balance >= 0
                         ? theme.colorScheme.error
                         : theme.colorScheme.primary,

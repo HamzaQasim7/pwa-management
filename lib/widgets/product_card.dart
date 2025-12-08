@@ -77,7 +77,7 @@ class ProductCard extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    '₹${product.rate.toStringAsFixed(0)}',
+                    'Rs ${product.rate.toStringAsFixed(0)}',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: colorScheme.primary,
