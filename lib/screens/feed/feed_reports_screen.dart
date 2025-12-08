@@ -315,18 +315,53 @@ class _ProfitTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<OrderProvider>(
       builder: (context, provider, child) {
-        // Generate trend data from orders
+        // Generate trend data from orders - ONLY from real data
         final trendData = <FlSpot>[];
         final orders = provider.allOrders;
         
-        // Create weekly trend (last 7 days)
+        // Create weekly trend (last 7 days) - only add points where there is real data
         for (int i = 0; i < 7; i++) {
           final dayProfit = orders.where((o) {
             final daysAgo = DateTime.now().difference(o.date).inDays;
             return daysAgo == i;
           }).fold<double>(0, (sum, o) => sum + o.total * 0.15);
           
-          trendData.add(FlSpot((6 - i).toDouble(), dayProfit > 0 ? dayProfit : (i + 2) * 5.0));
+          // Only add real data points
+          if (dayProfit > 0) {
+            trendData.add(FlSpot((6 - i).toDouble(), dayProfit));
+          }
+        }
+
+        // Show empty state if no data
+        if (trendData.isEmpty) {
+          return ResponsiveContentContainer(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.show_chart_outlined,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No Profit Data Available',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Create some orders to see profit trends',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
 
         return ResponsiveContentContainer(
@@ -344,12 +379,7 @@ class _ProfitTab extends StatelessWidget {
                         isCurved: true,
                         color: Theme.of(context).colorScheme.primary,
                         barWidth: 4,
-                        spots: trendData.isNotEmpty
-                            ? trendData
-                            : [
-                                for (int i = 0; i < 7; i++)
-                                  FlSpot(i.toDouble(), (i + 2) * 5.0),
-                              ],
+                        spots: trendData,
                       ),
                     ],
                   ),

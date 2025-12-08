@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -29,6 +31,7 @@ class _FeedProductsScreenState extends State<FeedProductsScreen> {
   final _lowStockController = TextEditingController();
   String _selectedCategory = 'Cattle';
   String _selectedUnit = 'kg';
+  String? _selectedImage;
 
   static const List<String> feedCategories = [
     'Cattle',
@@ -57,6 +60,7 @@ class _FeedProductsScreenState extends State<FeedProductsScreen> {
     _lowStockController.clear();
     _selectedCategory = 'Cattle';
     _selectedUnit = 'kg';
+    _selectedImage = null;
   }
 
   void _showAddProductSheet() {
@@ -181,7 +185,15 @@ class _FeedProductsScreenState extends State<FeedProductsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const ImagePickerWidget(label: 'Tap to attach product image'),
+            ImagePickerWidget(
+              label: 'Tap to attach product image',
+              initialImage: _selectedImage,
+              onImageSelected: (imageBase64) {
+                setFormState(() {
+                  _selectedImage = imageBase64;
+                });
+              },
+            ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _nameController,
@@ -321,6 +333,7 @@ class _FeedProductsScreenState extends State<FeedProductsScreen> {
       lowStockThreshold: int.tryParse(_lowStockController.text) ?? 10,
       rate: double.tryParse(_rateController.text) ?? 0,
       supplier: _supplierController.text.trim().isEmpty ? null : _supplierController.text.trim(),
+      image: _selectedImage,
     );
 
     if (success && mounted) {
@@ -643,6 +656,37 @@ class _ProductCard extends StatelessWidget {
     required this.onDelete,
   });
 
+  Widget _buildProductImage(BuildContext context) {
+    final theme = Theme.of(context);
+
+    // Check if product has a base64 image
+    if (product.image != null && product.image!.isNotEmpty) {
+      try {
+        final bytes = base64Decode(product.image!);
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.memory(
+            bytes,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+          ),
+        );
+      } catch (e) {
+        // Invalid base64, show placeholder
+      }
+    }
+
+    // Default placeholder
+    return Center(
+      child: Icon(
+        Icons.inventory_2,
+        size: 48,
+        color: theme.colorScheme.primary.withOpacity(0.5),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -667,7 +711,7 @@ class _ProductCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Image placeholder
+              // Image section
               Expanded(
                 child: Container(
                   width: double.infinity,
@@ -675,15 +719,11 @@ class _ProductCard extends StatelessWidget {
                     color: theme.colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  clipBehavior: Clip.antiAlias,
                   child: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      Center(
-                        child: Icon(
-                          Icons.inventory_2,
-                          size: 48,
-                          color: theme.colorScheme.primary.withOpacity(0.5),
-                        ),
-                      ),
+                      _buildProductImage(context),
                       // Category badge
                       Positioned(
                         top: 8,

@@ -183,59 +183,112 @@ class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
               )
             else
               ...medicines.map(
-                (medicine) => Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(medicine.name, style: Theme.of(context).textTheme.titleMedium),
-                        const SizedBox(height: 4),
-                        Text('Stock ${medicine.quantity} • Batch ${medicine.batchNo}'),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                decoration: const InputDecoration(labelText: 'Batch'),
-                                items: [medicine.batchNo]
-                                    .map((batch) => DropdownMenuItem(value: batch, child: Text(batch)))
-                                    .toList(),
-                                onChanged: (_) {},
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: TextField(
-                                decoration: const InputDecoration(labelText: 'Quantity'),
-                                keyboardType: TextInputType.number,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text('Rs ${medicine.sellingPrice}'),
-                          subtitle: Text(
-                            'Margin: ${medicine.margin.toStringAsFixed(1)}%',
-                          ),
-                          trailing: FilledButton(
-                            onPressed: medicine.quantity > 0
-                                ? () {
-                                    setState(() {
-                                      billItems.update(medicine, (value) => value + 1, ifAbsent: () => 1);
-                                    });
-                                    _toast('Added ${medicine.name} to bill');
-                                  }
-                                : null,
-                            child: Text(medicine.quantity > 0 ? 'Add to Bill' : 'Out of Stock'),
-                          ),
-                        ),
-                      ],
+                (medicine) {
+                  final inBillQty = billItems[medicine] ?? 0;
+                  final availableStock = medicine.quantity - inBillQty;
+                  final canAddMore = availableStock > 0;
+                  final isOutOfStock = medicine.quantity <= 0;
+                  
+                  return Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: isOutOfStock ? BorderSide(
+                        color: Theme.of(context).colorScheme.error.withOpacity(0.3),
+                      ) : BorderSide.none,
                     ),
-                  ),
-                ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  medicine.name, 
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: isOutOfStock 
+                                        ? Theme.of(context).colorScheme.error 
+                                        : null,
+                                  ),
+                                ),
+                              ),
+                              if (inBillQty > 0)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.primaryContainer,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '$inBillQty in bill',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Theme.of(context).colorScheme.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Stock ${medicine.quantity} • Batch ${medicine.batchNo}',
+                            style: TextStyle(
+                              color: isOutOfStock 
+                                  ? Theme.of(context).colorScheme.error 
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  decoration: const InputDecoration(labelText: 'Batch'),
+                                  items: [medicine.batchNo]
+                                      .map((batch) => DropdownMenuItem(value: batch, child: Text(batch)))
+                                      .toList(),
+                                  onChanged: (_) {},
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextField(
+                                  decoration: const InputDecoration(labelText: 'Quantity'),
+                                  keyboardType: TextInputType.number,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text('Rs ${medicine.sellingPrice}'),
+                            subtitle: Text(
+                              'Margin: ${medicine.margin.toStringAsFixed(1)}%',
+                            ),
+                            trailing: FilledButton(
+                              onPressed: canAddMore
+                                  ? () {
+                                      setState(() {
+                                        billItems.update(medicine, (value) => value + 1, ifAbsent: () => 1);
+                                      });
+                                      _toast('Added ${medicine.name} to bill');
+                                    }
+                                  : null,
+                              child: Text(
+                                isOutOfStock 
+                                    ? 'Out of Stock' 
+                                    : (canAddMore ? 'Add to Bill' : 'Max Qty'),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
           ],
         );
@@ -373,6 +426,15 @@ class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
     }
 
     final saleProvider = context.read<SaleProvider>();
+    final medicineProvider = context.read<MedicineProvider>();
+
+    // Validate stock availability before creating sale
+    for (final entry in billItems.entries) {
+      if (entry.key.quantity < entry.value) {
+        _toast('Insufficient stock for ${entry.key.name}. Available: ${entry.key.quantity}, Requested: ${entry.value}');
+        return;
+      }
+    }
 
     // Clear existing cart and add current items
     saleProvider.clearCart();
@@ -409,6 +471,11 @@ class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
     );
 
     if (success) {
+      // Deduct stock for each medicine in the sale
+      for (final entry in billItems.entries) {
+        await medicineProvider.deductStock(entry.key.id, entry.value);
+      }
+      
       _toast('Sale recorded successfully!');
       // Clear local state
       setState(() {

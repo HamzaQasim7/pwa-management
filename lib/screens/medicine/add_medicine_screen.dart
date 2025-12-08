@@ -33,6 +33,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
   String _selectedUnit = 'bottles';
   DateTime _mfgDate = DateTime.now().subtract(const Duration(days: 30));
   DateTime _expiryDate = DateTime.now().add(const Duration(days: 365));
+  String? _selectedImage;
 
   int get remainingDays => _expiryDate.difference(DateTime.now()).inDays;
   
@@ -80,6 +81,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
       unit: _selectedUnit,
       storage: _storageController.text.trim().isEmpty ? null : _storageController.text.trim(),
       description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
+      image: _selectedImage,
     );
 
     if (success && mounted) {
@@ -132,7 +134,15 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
                   children: [
                     const _SectionTitle('Basic'),
                     const SizedBox(height: 16),
-                    const ImagePickerWidget(label: 'Tap to choose medicine photo'),
+                    ImagePickerWidget(
+                      label: 'Tap to choose medicine photo',
+                      initialImage: _selectedImage,
+                      onImageSelected: (imageBase64) {
+                        setState(() {
+                          _selectedImage = imageBase64;
+                        });
+                      },
+                    ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _nameController,
