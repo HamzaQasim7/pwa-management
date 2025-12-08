@@ -1,0 +1,86 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'customer_model.dart';
+
+// **************************************************************************
+// TypeAdapterGenerator
+// **************************************************************************
+
+class CustomerModelAdapter extends TypeAdapter<CustomerModel> {
+  @override
+  final int typeId = 0;
+
+  @override
+  CustomerModel read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return CustomerModel(
+      id: fields[0] as String,
+      name: fields[1] as String,
+      phone: fields[2] as String,
+      email: fields[3] as String?,
+      shopName: fields[4] as String?,
+      address: fields[5] as String?,
+      balance: fields[6] as double,
+      customerType: fields[7] as String,
+      createdAt: fields[8] as DateTime,
+      updatedAt: fields[9] as DateTime,
+      isSynced: fields[10] as bool,
+      firebaseId: fields[11] as String?,
+      notes: fields[12] as String?,
+      city: fields[13] as String?,
+      area: fields[14] as String?,
+      creditLimit: fields[15] as double?,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, CustomerModel obj) {
+    writer
+      ..writeByte(16)
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.name)
+      ..writeByte(2)
+      ..write(obj.phone)
+      ..writeByte(3)
+      ..write(obj.email)
+      ..writeByte(4)
+      ..write(obj.shopName)
+      ..writeByte(5)
+      ..write(obj.address)
+      ..writeByte(6)
+      ..write(obj.balance)
+      ..writeByte(7)
+      ..write(obj.customerType)
+      ..writeByte(8)
+      ..write(obj.createdAt)
+      ..writeByte(9)
+      ..write(obj.updatedAt)
+      ..writeByte(10)
+      ..write(obj.isSynced)
+      ..writeByte(11)
+      ..write(obj.firebaseId)
+      ..writeByte(12)
+      ..write(obj.notes)
+      ..writeByte(13)
+      ..write(obj.city)
+      ..writeByte(14)
+      ..write(obj.area)
+      ..writeByte(15)
+      ..write(obj.creditLimit);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CustomerModelAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
