@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../presentation/providers/customer_provider.dart';
 
 /// Show Add Customer Dialog (Desktop)
 void showAddCustomerDialog(BuildContext context) {
@@ -57,20 +60,10 @@ void showAddCustomerDialog(BuildContext context) {
               ),
             ),
             // Form content
-            Flexible(
+            const Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: _CustomerForm(
-                  onSave: () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Customer saved successfully (mock)'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  },
-                ),
+                padding: EdgeInsets.all(24),
+                child: _CustomerForm(),
               ),
             ),
           ],
@@ -153,17 +146,7 @@ void showAddCustomerBottomSheet(BuildContext context) {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _CustomerForm(
-                  onSave: () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Customer saved successfully (mock)'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  },
-                ),
+                const _CustomerForm(),
               ],
             ),
           );
@@ -175,9 +158,7 @@ void showAddCustomerBottomSheet(BuildContext context) {
 
 /// Customer Form Widget
 class _CustomerForm extends StatefulWidget {
-  final VoidCallback onSave;
-
-  const _CustomerForm({required this.onSave});
+  const _CustomerForm();
 
   @override
   State<_CustomerForm> createState() => _CustomerFormState();
@@ -185,7 +166,69 @@ class _CustomerForm extends StatefulWidget {
 
 class _CustomerFormState extends State<_CustomerForm> {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _shopNameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _areaController = TextEditingController();
+  final _creditLimitController = TextEditingController();
+  final _notesController = TextEditingController();
   String _customerType = 'Retail';
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _shopNameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _addressController.dispose();
+    _cityController.dispose();
+    _areaController.dispose();
+    _creditLimitController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveCustomer() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final provider = context.read<CustomerProvider>();
+    
+    final success = await provider.addCustomer(
+      name: _nameController.text.trim(),
+      phone: _phoneController.text.trim(),
+      email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
+      shopName: _shopNameController.text.trim().isEmpty ? null : _shopNameController.text.trim(),
+      address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
+      customerType: _customerType,
+      city: _cityController.text.trim().isEmpty ? null : _cityController.text.trim(),
+      area: _areaController.text.trim().isEmpty ? null : _areaController.text.trim(),
+      creditLimit: _creditLimitController.text.trim().isEmpty 
+          ? null 
+          : double.tryParse(_creditLimitController.text.trim()),
+      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+    );
+
+    if (success && mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Customer added successfully'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(provider.error ?? 'Failed to add customer'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -218,14 +261,16 @@ class _CustomerFormState extends State<_CustomerForm> {
 
           // Name
           TextFormField(
+            controller: _nameController,
             decoration: const InputDecoration(
               labelText: 'Customer Name',
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.person),
               hintText: 'Enter full name',
             ),
+            textCapitalization: TextCapitalization.words,
             validator: (value) {
-              if (value == null || value.isEmpty) {
+              if (value == null || value.trim().isEmpty) {
                 return 'Please enter customer name';
               }
               return null;
@@ -235,26 +280,29 @@ class _CustomerFormState extends State<_CustomerForm> {
 
           // Shop/Business Name
           TextFormField(
+            controller: _shopNameController,
             decoration: const InputDecoration(
               labelText: 'Shop/Business Name',
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.store),
               hintText: 'Enter shop name',
             ),
+            textCapitalization: TextCapitalization.words,
           ),
           const SizedBox(height: 12),
 
           // Phone Number
           TextFormField(
+            controller: _phoneController,
             decoration: const InputDecoration(
               labelText: 'Phone Number',
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.phone),
-              hintText: '+92 300 1234567',
+              hintText: '+91 98765 43210',
             ),
             keyboardType: TextInputType.phone,
             validator: (value) {
-              if (value == null || value.isEmpty) {
+              if (value == null || value.trim().isEmpty) {
                 return 'Please enter phone number';
               }
               return null;
@@ -264,6 +312,7 @@ class _CustomerFormState extends State<_CustomerForm> {
 
           // Email (Optional)
           TextFormField(
+            controller: _emailController,
             decoration: const InputDecoration(
               labelText: 'Email (Optional)',
               border: OutlineInputBorder(),
@@ -276,6 +325,7 @@ class _CustomerFormState extends State<_CustomerForm> {
 
           // Address
           TextFormField(
+            controller: _addressController,
             decoration: const InputDecoration(
               labelText: 'Address',
               border: OutlineInputBorder(),
@@ -291,21 +341,25 @@ class _CustomerFormState extends State<_CustomerForm> {
             children: [
               Expanded(
                 child: TextFormField(
+                  controller: _cityController,
                   decoration: const InputDecoration(
                     labelText: 'City',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.location_city),
                   ),
+                  textCapitalization: TextCapitalization.words,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: TextFormField(
+                  controller: _areaController,
                   decoration: const InputDecoration(
                     labelText: 'Area',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.map),
                   ),
+                  textCapitalization: TextCapitalization.words,
                 ),
               ),
             ],
@@ -315,6 +369,7 @@ class _CustomerFormState extends State<_CustomerForm> {
           // Credit Limit (for wholesale)
           if (_customerType != 'Retail') ...[
             TextFormField(
+              controller: _creditLimitController,
               decoration: const InputDecoration(
                 labelText: 'Credit Limit',
                 border: OutlineInputBorder(),
@@ -329,6 +384,7 @@ class _CustomerFormState extends State<_CustomerForm> {
 
           // Notes
           TextFormField(
+            controller: _notesController,
             decoration: const InputDecoration(
               labelText: 'Notes (Optional)',
               border: OutlineInputBorder(),
@@ -340,21 +396,29 @@ class _CustomerFormState extends State<_CustomerForm> {
           const SizedBox(height: 20),
 
           // Save Button
-          FilledButton.icon(
-            onPressed: () {
-              if (_formKey.currentState!.validate()) {
-                widget.onSave();
-              }
+          Consumer<CustomerProvider>(
+            builder: (context, provider, child) {
+              return FilledButton.icon(
+                onPressed: provider.isLoading ? null : _saveCustomer,
+                icon: provider.isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.check),
+                label: Text(provider.isLoading ? 'Saving...' : 'Save Customer'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.all(16),
+                ),
+              );
             },
-            icon: const Icon(Icons.check),
-            label: const Text('Save Customer'),
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.all(16),
-            ),
           ),
         ],
       ),
     );
   }
 }
-

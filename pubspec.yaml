@@ -1,7 +1,8 @@
 name: vetcare_app
 description: >-
-  Frontend-only Flutter demo app for a veterinary business with
+  Full-stack Flutter application for veterinary business with
   feed distribution and medicine management modules.
+  Features offline-first architecture with local database and cloud sync.
 publish_to: 'none'
 version: 1.0.0+1
 environment:
@@ -21,11 +22,25 @@ dependencies:
   badges: ^3.1.2
   flutter_speed_dial: ^7.0.0
   image_picker: ^1.0.7
+  
+  # State Management
+  provider: ^6.1.1
+  
+  # Local Database
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  
+  # Utilities
+  uuid: ^4.2.1
+  path_provider: ^2.1.1
+  connectivity_plus: ^5.0.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.7
 
 flutter:
   uses-material-design: true

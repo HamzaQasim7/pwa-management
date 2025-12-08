@@ -4,16 +4,22 @@ import 'package:flutter_svg/flutter_svg.dart';
 class EmptyState extends StatelessWidget {
   const EmptyState({
     super.key,
-    required this.asset,
+    this.asset,
+    this.icon,
     required this.title,
     required this.subtitle,
     this.action,
+    this.actionLabel,
+    this.onAction,
   });
 
-  final String asset;
+  final String? asset;
+  final IconData? icon;
   final String title;
   final String subtitle;
   final Widget? action;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -23,11 +29,18 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SvgPicture.asset(
-              asset,
-              height: 160,
-              fit: BoxFit.contain,
-            ),
+            if (asset != null)
+              SvgPicture.asset(
+                asset!,
+                height: 160,
+                fit: BoxFit.contain,
+              )
+            else if (icon != null)
+              Icon(
+                icon,
+                size: 80,
+                color: Theme.of(context).colorScheme.outline,
+              ),
             const SizedBox(height: 24),
             Text(
               title,
@@ -38,11 +51,19 @@ class EmptyState extends StatelessWidget {
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             if (action != null) ...[
               const SizedBox(height: 16),
               action!,
+            ] else if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: onAction,
+                child: Text(actionLabel!),
+              ),
             ],
           ],
         ),
