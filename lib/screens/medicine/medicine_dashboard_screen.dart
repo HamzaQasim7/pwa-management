@@ -7,10 +7,8 @@ import '../../presentation/providers/medicine_provider.dart';
 import '../../presentation/providers/sale_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/responsive_layout.dart';
-import '../../widgets/alert_card.dart';
 import '../../widgets/stat_card.dart';
 import '../../widgets/loading_shimmer.dart';
-import '../../data/mock_data.dart';
 import 'add_medicine_screen.dart';
 import 'medicine_inventory_screen.dart';
 import 'medicine_reports_screen.dart';
@@ -27,6 +25,18 @@ class MedicineDashboardScreen extends StatefulWidget {
 
 class _MedicineDashboardScreenState extends State<MedicineDashboardScreen> {
   String range = '30D';
+
+  List<FlSpot> _generateTrendData(String range) {
+    // Generate sample trend data based on range
+    final count = range == '7D' ? 7 : range == '30D' ? 30 : 12;
+    final baseValue = range == '7D' ? 60.0 : range == '30D' ? 40.0 : 50.0;
+    
+    return List.generate(count, (i) {
+      // Create a realistic-looking trend with some variation
+      final variation = (i % 3 + 1) * 8.0 + (i % 5) * 3.0;
+      return FlSpot(i.toDouble(), baseValue + variation);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -207,13 +217,10 @@ class _MedicineDashboardScreenState extends State<MedicineDashboardScreen> {
                           child: LineChart(
                           LineChartData(
                             borderData: FlBorderData(show: false),
-                            titlesData: FlTitlesData(show: false),
+                            titlesData: const FlTitlesData(show: false),
                             lineBarsData: [
                               LineChartBarData(
-                                spots: [
-                                  for (int i = 0; i < mockTrend.length; i++)
-                                    FlSpot(i.toDouble(), mockTrend[i] + (range == '7D' ? 40 : 0)),
-                                ],
+                                spots: _generateTrendData(range),
                                 isCurved: true,
                                 color: AppColors.medSecondary,
                                 barWidth: 4,

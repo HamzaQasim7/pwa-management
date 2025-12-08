@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../data/mock_data.dart';
-import '../../models/medicine.dart';
+import '../../data/models/customer_model.dart';
+import '../../data/models/medicine_model.dart';
+import '../../data/models/sale_model.dart';
+import '../../presentation/providers/customer_provider.dart';
+import '../../presentation/providers/medicine_provider.dart';
+import '../../presentation/providers/sale_provider.dart';
 import '../../widgets/quantity_stepper.dart';
 import '../../widgets/status_badge.dart';
 import 'invoice_preview_screen.dart';
@@ -15,10 +20,11 @@ class MedicineSalesScreen extends StatefulWidget {
 
 class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
   int currentStep = 0;
-  String? selectedCustomer;
-  final Map<Medicine, int> billItems = {};
+  CustomerModel? selectedCustomer;
+  final Map<MedicineModel, int> billItems = {};
   String paymentMethod = 'Cash';
   double amountReceived = 0;
+  String _searchQuery = '';
 
   double get subtotal => billItems.entries
       .map((entry) => entry.key.sellingPrice * entry.value)
@@ -28,6 +34,16 @@ class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
   double get grandTotal => subtotal - discount;
   double get profit =>
       billItems.entries.map((e) => (e.key.sellingPrice - e.key.purchasePrice) * e.value).fold(0, (a, b) => a + b);
+
+  @override
+  void initState() {
+    super.initState();
+    // Load customers and medicines when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CustomerProvider>().loadCustomers();
+      context.read<MedicineProvider>().loadMedicines();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,9 +56,7 @@ class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
             if (currentStep < 3) {
               setState(() => currentStep += 1);
             } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Invoice generated (mock).')),
-              );
+              _saveSale();
             }
           },
           onStepCancel: () {
@@ -51,214 +65,365 @@ class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
           steps: [
             Step(
               title: const Text('Customer'),
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  FilledButton.icon(
-                    onPressed: () => _toast('Quick sale started'),
-                    icon: const Icon(Icons.flash_on),
-                    label: const Text('Quick Sale'),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(labelText: 'Select customer'),
-                    items: mockCustomers
-                        .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
-                        .toList(),
-                    onChanged: (value) => setState(() => selectedCustomer = value),
-                  ),
-                  const SizedBox(height: 12),
-                  if (selectedCustomer != null)
-                    Card(
-                      child: ListTile(
-                        title: Text(mockCustomers.firstWhere((c) => c.id == selectedCustomer).shopName),
-                        subtitle: Text(mockCustomers.firstWhere((c) => c.id == selectedCustomer).phone),
-                        trailing: StatusBadge(label: 'Trusted', color: Colors.green),
-                      ),
-                    ),
-                ],
-              ),
+              content: _buildCustomerStep(),
               isActive: currentStep >= 0,
             ),
             Step(
               title: const Text('Add Medicines'),
-              content: Column(
-                children: [
-                  TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search medicines')),
-                  const SizedBox(height: 12),
-                  ...mockMedicines.take(5).map(
-                    (medicine) => Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(medicine.name, style: Theme.of(context).textTheme.titleMedium),
-                            const SizedBox(height: 4),
-                            Text('Stock ${medicine.quantity} • Batch ${medicine.batchNo}'),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: DropdownButtonFormField<String>(
-                                    decoration: const InputDecoration(labelText: 'Batch'),
-                                    items: [medicine.batchNo]
-                                        .map((batch) => DropdownMenuItem(value: batch, child: Text(batch)))
-                                        .toList(),
-                                    onChanged: (_) {},
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: TextField(
-                                    decoration: const InputDecoration(labelText: 'Quantity'),
-                                    keyboardType: TextInputType.number,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text('₹${medicine.sellingPrice}'),
-                              subtitle: const Text('Price breakdown soon'),
-                              trailing: FilledButton(
-                                onPressed: () {
-                                  setState(() {
-                                    billItems.update(medicine, (value) => value + 1, ifAbsent: () => 1);
-                                  });
-                                },
-                                child: const Text('Add to Bill'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              content: _buildMedicinesStep(),
               isActive: currentStep >= 1,
             ),
             Step(
               title: const Text('Bill Review'),
-              content: Column(
-                children: [
-                  if (billItems.isEmpty)
-                    const Text('No medicines added yet')
-                  else
-                    ...billItems.entries.map(
-                      (entry) => Dismissible(
-                        key: ValueKey(entry.key.id),
-                        onDismissed: (_) => setState(() => billItems.remove(entry.key)),
-                        child: Card(
-                          child: ListTile(
-                            title: Text(entry.key.name),
-                            subtitle: Text('₹${entry.key.sellingPrice} • Profit ₹${(entry.key.sellingPrice - entry.key.purchasePrice).toStringAsFixed(0)}'),
-                            trailing: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                QuantityStepper(
-                                  value: entry.value,
-                                  min: 1,
-                                  onChanged: (value) => setState(() => billItems[entry.key] = value),
-                                ),
-                                Text('Line: ₹${(entry.key.sellingPrice * entry.value).toStringAsFixed(0)}'),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          _AmountRow(label: 'Subtotal', value: subtotal),
-                          _AmountRow(label: 'Discount', value: discount),
-                          _AmountRow(label: 'Total profit', value: profit, highlighted: true),
-                          const Divider(),
-                          _AmountRow(label: 'Grand total', value: grandTotal, highlighted: true),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              content: _buildBillReviewStep(),
               isActive: currentStep >= 2,
             ),
             Step(
               title: const Text('Payment'),
-              content: Column(
-                children: [
-                  Wrap(
-                    spacing: 12,
-                    children: ['Cash', 'UPI', 'Card']
-                        .map(
-                          (method) => ChoiceChip(
-                            label: Text(method),
-                            selected: paymentMethod == method,
-                            onSelected: (_) => setState(() => paymentMethod = method),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    decoration: const InputDecoration(labelText: 'Amount received'),
-                    keyboardType: TextInputType.number,
-                    onChanged: (value) => setState(() => amountReceived = double.tryParse(value) ?? 0),
-                  ),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('Change: ₹${(amountReceived - grandTotal).toStringAsFixed(0)}'),
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    child: ListTile(
-                      leading: const Icon(Icons.receipt_long),
-                      title: const Text('Invoice Preview'),
-                      subtitle: Text('Total ₹${grandTotal.toStringAsFixed(0)}'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.open_in_new),
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const InvoicePreviewScreen()),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _toast('Print invoice'),
-                          icon: const Icon(Icons.print),
-                          label: const Text('Print'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: () => _toast('Share invoice'),
-                          icon: const Icon(Icons.share),
-                          label: const Text('Share'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+              content: _buildPaymentStep(),
               isActive: currentStep >= 3,
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildCustomerStep() {
+    return Consumer<CustomerProvider>(
+      builder: (context, customerProvider, child) {
+        final customers = customerProvider.allCustomers;
+        final isLoading = customerProvider.isLoading;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            FilledButton.icon(
+              onPressed: () {
+                setState(() {
+                  selectedCustomer = null;
+                });
+                _toast('Quick sale started - no customer selected');
+              },
+              icon: const Icon(Icons.flash_on),
+              label: const Text('Quick Sale'),
+            ),
+            const SizedBox(height: 12),
+            if (isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (customers.isEmpty)
+              const Text('No customers found. Add customers first.')
+            else
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(labelText: 'Select customer'),
+                value: selectedCustomer?.id,
+                items: customers
+                    .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      selectedCustomer = customers.firstWhere((c) => c.id == value);
+                    });
+                  }
+                },
+              ),
+            const SizedBox(height: 12),
+            if (selectedCustomer != null)
+              Card(
+                child: ListTile(
+                  title: Text(selectedCustomer!.shopName),
+                  subtitle: Text(selectedCustomer!.phone),
+                  trailing: StatusBadge(
+                    label: selectedCustomer!.type,
+                    color: selectedCustomer!.type == 'premium' 
+                        ? Colors.green 
+                        : Colors.blue,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildMedicinesStep() {
+    return Consumer<MedicineProvider>(
+      builder: (context, medicineProvider, child) {
+        final allMedicines = medicineProvider.allMedicines;
+        final isLoading = medicineProvider.isLoading;
+
+        // Filter medicines by search query
+        final medicines = _searchQuery.isEmpty
+            ? allMedicines.take(5).toList()
+            : allMedicines.where((m) {
+                final query = _searchQuery.toLowerCase();
+                return m.name.toLowerCase().contains(query) ||
+                    m.genericName.toLowerCase().contains(query) ||
+                    m.category.toLowerCase().contains(query);
+              }).take(10).toList();
+
+        return Column(
+          children: [
+            TextField(
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.search),
+                hintText: 'Search medicines',
+              ),
+              onChanged: (value) => setState(() => _searchQuery = value),
+            ),
+            const SizedBox(height: 12),
+            if (isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (medicines.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text('No medicines found. Add medicines first.'),
+              )
+            else
+              ...medicines.map(
+                (medicine) => Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(medicine.name, style: Theme.of(context).textTheme.titleMedium),
+                        const SizedBox(height: 4),
+                        Text('Stock ${medicine.quantity} • Batch ${medicine.batchNo}'),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                decoration: const InputDecoration(labelText: 'Batch'),
+                                items: [medicine.batchNo]
+                                    .map((batch) => DropdownMenuItem(value: batch, child: Text(batch)))
+                                    .toList(),
+                                onChanged: (_) {},
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextField(
+                                decoration: const InputDecoration(labelText: 'Quantity'),
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text('₹${medicine.sellingPrice}'),
+                          subtitle: Text(
+                            'Margin: ${medicine.margin.toStringAsFixed(1)}%',
+                          ),
+                          trailing: FilledButton(
+                            onPressed: medicine.quantity > 0
+                                ? () {
+                                    setState(() {
+                                      billItems.update(medicine, (value) => value + 1, ifAbsent: () => 1);
+                                    });
+                                    _toast('Added ${medicine.name} to bill');
+                                  }
+                                : null,
+                            child: Text(medicine.quantity > 0 ? 'Add to Bill' : 'Out of Stock'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildBillReviewStep() {
+    return Column(
+      children: [
+        if (billItems.isEmpty)
+          const Text('No medicines added yet')
+        else
+          ...billItems.entries.map(
+            (entry) => Dismissible(
+              key: ValueKey(entry.key.id),
+              onDismissed: (_) => setState(() => billItems.remove(entry.key)),
+              child: Card(
+                child: ListTile(
+                  title: Text(entry.key.name),
+                  subtitle: Text('₹${entry.key.sellingPrice} • Profit ₹${(entry.key.sellingPrice - entry.key.purchasePrice).toStringAsFixed(0)}'),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      QuantityStepper(
+                        value: entry.value,
+                        min: 1,
+                        onChanged: (value) => setState(() => billItems[entry.key] = value),
+                      ),
+                      Text('Line: ₹${(entry.key.sellingPrice * entry.value).toStringAsFixed(0)}'),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                _AmountRow(label: 'Subtotal', value: subtotal),
+                _AmountRow(label: 'Discount', value: discount),
+                _AmountRow(label: 'Total profit', value: profit, highlighted: true),
+                const Divider(),
+                _AmountRow(label: 'Grand total', value: grandTotal, highlighted: true),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPaymentStep() {
+    return Consumer<SaleProvider>(
+      builder: (context, saleProvider, child) {
+        final isLoading = saleProvider.isLoading;
+
+        return Column(
+          children: [
+            Wrap(
+              spacing: 12,
+              children: ['Cash', 'UPI', 'Card']
+                  .map(
+                    (method) => ChoiceChip(
+                      label: Text(method),
+                      selected: paymentMethod == method,
+                      onSelected: (_) => setState(() => paymentMethod = method),
+                    ),
+                  )
+                  .toList(),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              decoration: const InputDecoration(labelText: 'Amount received'),
+              keyboardType: TextInputType.number,
+              onChanged: (value) => setState(() => amountReceived = double.tryParse(value) ?? 0),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Change: ₹${(amountReceived - grandTotal).toStringAsFixed(0)}'),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              child: ListTile(
+                leading: const Icon(Icons.receipt_long),
+                title: const Text('Invoice Preview'),
+                subtitle: Text('Total ₹${grandTotal.toStringAsFixed(0)}'),
+                trailing: IconButton(
+                  icon: const Icon(Icons.open_in_new),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const InvoicePreviewScreen()),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (isLoading)
+              const Center(child: CircularProgressIndicator())
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _toast('Print invoice'),
+                      icon: const Icon(Icons.print),
+                      label: const Text('Print'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () => _toast('Share invoice'),
+                      icon: const Icon(Icons.share),
+                      label: const Text('Share'),
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _saveSale() async {
+    if (billItems.isEmpty) {
+      _toast('Please add medicines to the bill');
+      return;
+    }
+
+    final saleProvider = context.read<SaleProvider>();
+
+    // Clear existing cart and add current items
+    saleProvider.clearCart();
+
+    // Set selected customer if any
+    if (selectedCustomer != null) {
+      saleProvider.setSelectedCustomer(
+        selectedCustomer!.id,
+        selectedCustomer!.name,
+      );
+    }
+
+    // Add all bill items to cart
+    for (final entry in billItems.entries) {
+      final medicine = entry.key;
+      final quantity = entry.value;
+      final itemTotal = medicine.sellingPrice * quantity;
+
+      saleProvider.addToCart(SaleItemModel(
+        productId: medicine.id,
+        productName: medicine.name,
+        quantity: quantity,
+        rate: medicine.sellingPrice,
+        discount: 0,
+        total: itemTotal,
+        purchasePrice: medicine.purchasePrice,
+      ));
+    }
+
+    // Create sale
+    final success = await saleProvider.createSale(
+      paymentMethod: paymentMethod,
+      discount: discount,
+    );
+
+    if (success) {
+      _toast('Sale recorded successfully!');
+      // Clear local state
+      setState(() {
+        billItems.clear();
+        selectedCustomer = null;
+        currentStep = 0;
+        amountReceived = 0;
+        paymentMethod = 'Cash';
+      });
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } else {
+      _toast(saleProvider.error ?? 'Failed to record sale');
+    }
   }
 
   void _toast(String text) {
