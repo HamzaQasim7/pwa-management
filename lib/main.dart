@@ -3,12 +3,19 @@ import 'package:provider/provider.dart';
 
 import 'core/database/hive_service.dart';
 import 'core/services/data_seeder.dart';
+import 'core/services/sync_service.dart';
+import 'core/network/network_info.dart';
 import 'core/theme/modern_theme.dart';
 import 'data/datasources/customer_local_datasource.dart';
+import 'data/datasources/customer_remote_datasource.dart';
 import 'data/datasources/feed_product_local_datasource.dart';
+import 'data/datasources/feed_product_remote_datasource.dart';
 import 'data/datasources/medicine_local_datasource.dart';
+import 'data/datasources/medicine_remote_datasource.dart';
 import 'data/datasources/order_local_datasource.dart';
+import 'data/datasources/order_remote_datasource.dart';
 import 'data/datasources/sale_local_datasource.dart';
+import 'data/datasources/sale_remote_datasource.dart';
 import 'data/repositories/customer_repository_impl.dart';
 import 'data/repositories/feed_product_repository_impl.dart';
 import 'data/repositories/medicine_repository_impl.dart';
@@ -46,12 +53,23 @@ class VetCareApp extends StatefulWidget {
 class _VetCareAppState extends State<VetCareApp> {
   bool showSplash = true;
 
-  // Datasources
+  // Services
+  late final NetworkInfo _networkInfo;
+  late final SyncService _syncService;
+
+  // Datasources - Local
   late final CustomerLocalDatasource _customerLocalDatasource;
   late final FeedProductLocalDatasource _feedProductLocalDatasource;
   late final MedicineLocalDatasource _medicineLocalDatasource;
   late final OrderLocalDatasource _orderLocalDatasource;
   late final SaleLocalDatasource _saleLocalDatasource;
+
+  // Datasources - Remote (for future Firebase integration)
+  late final CustomerRemoteDatasource _customerRemoteDatasource;
+  late final FeedProductRemoteDatasource _feedProductRemoteDatasource;
+  late final MedicineRemoteDatasource _medicineRemoteDatasource;
+  late final OrderRemoteDatasource _orderRemoteDatasource;
+  late final SaleRemoteDatasource _saleRemoteDatasource;
 
   // Repositories
   late final CustomerRepositoryImpl _customerRepository;
@@ -68,12 +86,37 @@ class _VetCareAppState extends State<VetCareApp> {
   }
 
   void _initDependencies() {
-    // Initialize datasources
+    // Initialize network info
+    _networkInfo = NetworkInfo();
+
+    // Initialize local datasources
     _customerLocalDatasource = CustomerLocalDatasource();
     _feedProductLocalDatasource = FeedProductLocalDatasource();
     _medicineLocalDatasource = MedicineLocalDatasource();
     _orderLocalDatasource = OrderLocalDatasource();
     _saleLocalDatasource = SaleLocalDatasource();
+
+    // Initialize remote datasources (stub implementations for now)
+    _customerRemoteDatasource = CustomerRemoteDatasource();
+    _feedProductRemoteDatasource = FeedProductRemoteDatasource();
+    _medicineRemoteDatasource = MedicineRemoteDatasource();
+    _orderRemoteDatasource = OrderRemoteDatasource();
+    _saleRemoteDatasource = SaleRemoteDatasource();
+
+    // Initialize sync service
+    _syncService = SyncService(
+      networkInfo: _networkInfo,
+      customerLocal: _customerLocalDatasource,
+      customerRemote: _customerRemoteDatasource,
+      productLocal: _feedProductLocalDatasource,
+      productRemote: _feedProductRemoteDatasource,
+      medicineLocal: _medicineLocalDatasource,
+      medicineRemote: _medicineRemoteDatasource,
+      orderLocal: _orderLocalDatasource,
+      orderRemote: _orderRemoteDatasource,
+      saleLocal: _saleLocalDatasource,
+      saleRemote: _saleRemoteDatasource,
+    );
 
     // Initialize repositories
     _customerRepository = CustomerRepositoryImpl(_customerLocalDatasource);
@@ -89,6 +132,12 @@ class _VetCareAppState extends State<VetCareApp> {
         setState(() => showSplash = false);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _syncService.dispose();
+    super.dispose();
   }
 
   @override

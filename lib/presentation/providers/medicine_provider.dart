@@ -19,6 +19,7 @@ class MedicineProvider with ChangeNotifier {
   Set<String> _selectedCategories = {};
   String _stockFilter = 'All'; // All, LowStock, OutOfStock, InStock
   String _expiryFilter = 'All'; // All, Expired, ExpiringSoon, Valid
+  String _sortBy = 'name'; // name, quantity, expiry, price
 
   MedicineProvider(this._repository) {
     loadMedicines();
@@ -83,6 +84,7 @@ class MedicineProvider with ChangeNotifier {
   Set<String> get selectedCategories => _selectedCategories;
   String get stockFilter => _stockFilter;
   String get expiryFilter => _expiryFilter;
+  String get sortBy => _sortBy;
 
   int get totalCount => _repository.totalCount;
   double get totalStockValueAtCost => _repository.totalStockValueAtCost;
@@ -295,6 +297,32 @@ class MedicineProvider with ChangeNotifier {
   void setExpiryFilter(String filter) {
     _expiryFilter = filter;
     notifyListeners();
+  }
+
+  /// Set sort by
+  void setSortBy(String sort) {
+    _sortBy = sort;
+    _sortMedicines();
+    notifyListeners();
+  }
+
+  /// Sort medicines based on current sort setting
+  void _sortMedicines() {
+    switch (_sortBy) {
+      case 'quantity':
+        _medicines.sort((a, b) => a.quantity.compareTo(b.quantity));
+        break;
+      case 'expiry':
+        _medicines.sort((a, b) => a.expiryDate.compareTo(b.expiryDate));
+        break;
+      case 'price':
+        _medicines.sort((a, b) => a.sellingPrice.compareTo(b.sellingPrice));
+        break;
+      case 'name':
+      default:
+        _medicines.sort((a, b) => a.name.compareTo(b.name));
+        break;
+    }
   }
 
   /// Clear filters

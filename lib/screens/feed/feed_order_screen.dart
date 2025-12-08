@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../data/mock_data.dart';
-import '../../models/feed_product.dart';
+import '../../data/models/customer_model.dart';
+import '../../data/models/feed_product_model.dart';
+import '../../data/models/order_model.dart';
+import '../../presentation/providers/customer_provider.dart';
+import '../../presentation/providers/feed_product_provider.dart';
+import '../../presentation/providers/order_provider.dart';
 import '../../utils/invoice_generator.dart';
 import '../../utils/responsive_layout.dart';
 import '../../widgets/quantity_stepper.dart';
 import '../../widgets/status_badge.dart';
+import '../../widgets/loading_shimmer.dart';
+import '../../widgets/empty_state.dart';
 
 class FeedOrderScreen extends StatefulWidget {
   const FeedOrderScreen({super.key});
@@ -16,8 +23,8 @@ class FeedOrderScreen extends StatefulWidget {
 
 class _FeedOrderScreenState extends State<FeedOrderScreen> {
   int currentStep = 0;
-  String? selectedCustomerId;
-  final Map<FeedProduct, int> cart = {};
+  CustomerModel? selectedCustomer;
+  final Map<FeedProductModel, int> cart = {};
   String paymentStatus = 'Pending';
 
   double get subtotal => cart.entries
@@ -45,15 +52,7 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
             padding: ResponsiveLayout.padding(context),
             child: Stepper(
               currentStep: currentStep,
-              onStepContinue: () {
-                if (currentStep < 3) {
-                  setState(() => currentStep += 1);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Order sent for review (mock).')),
-                  );
-                }
-              },
+              onStepContinue: _handleStepContinue,
               onStepCancel: () {
                 if (currentStep > 0) {
                   setState(() => currentStep -= 1);
@@ -64,10 +63,26 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
                   padding: const EdgeInsets.only(top: 16),
                   child: Row(
                     children: [
-                      FilledButton.icon(
-                        onPressed: details.onStepContinue,
-                        icon: Icon(currentStep == 3 ? Icons.check : Icons.arrow_forward),
-                        label: Text(currentStep == 3 ? 'Finish' : 'Continue'),
+                      Consumer<OrderProvider>(
+                        builder: (context, provider, child) {
+                          final isLastStep = currentStep == 3;
+                          return FilledButton.icon(
+                            onPressed: provider.isLoading ? null : details.onStepContinue,
+                            icon: provider.isLoading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Icon(isLastStep ? Icons.check : Icons.arrow_forward),
+                            label: Text(isLastStep 
+                                ? (provider.isLoading ? 'Saving...' : 'Finish') 
+                                : 'Continue'),
+                          );
+                        },
                       ),
                       const SizedBox(width: 12),
                       if (currentStep > 0)
@@ -81,507 +96,628 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
                 );
               },
               steps: [
-            Step(
-              title: const Text('Customer'),
-              subtitle: const Text('Select customer for this order'),
-              isActive: currentStep >= 0,
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  DropdownButtonFormField<String>(
-                    value: selectedCustomerId,
-                    decoration: const InputDecoration(
-                      labelText: 'Search customers',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
-                    ),
-                    items: mockCustomers
-                        .map(
-                          (c) => DropdownMenuItem(
-                            value: c.id,
-                            child: Text(
-                              '${c.name} • ${c.shopName}',
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) => setState(() => selectedCustomerId = value),
-                  ),
-                  const SizedBox(height: 20),
-                  if (selectedCustomerId != null)
-                    Card(
-                      elevation: 2,
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Selected Customer',
-                              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                            const Divider(height: 20),
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                                  child: Icon(
-                                    Icons.person,
-                                    color: Theme.of(context).colorScheme.primary,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        mockCustomers
-                                            .firstWhere((c) => c.id == selectedCustomerId!)
-                                            .name,
-                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                        maxLines: 1,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        mockCustomers
-                                            .firstWhere((c) => c.id == selectedCustomerId!)
-                                            .phone,
-                                        style: Theme.of(context).textTheme.bodyMedium,
-                                        overflow: TextOverflow.ellipsis,
-                                        maxLines: 1,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                StatusBadge(
-                                  label:
-                                      '₹${mockCustomers.firstWhere((c) => c.id == selectedCustomerId!).balance.toStringAsFixed(0)}',
-                                  color: mockCustomers
-                                              .firstWhere((c) => c.id == selectedCustomerId!)
-                                              .balance >
-                                          0
-                                      ? Colors.orange
-                                      : Colors.green,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  else
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Please select a customer to continue',
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
+                _buildCustomerStep(),
+                _buildProductsStep(),
+                _buildCartStep(),
+                _buildInvoiceStep(),
+              ],
             ),
-            Step(
-              title: const Text('Products'),
-              subtitle: const Text('Select products for this order'),
-              isActive: currentStep >= 1,
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (isDesktop)
-                    GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 16,
-                      crossAxisSpacing: 16,
-                      childAspectRatio: 3.5,
-                      children: mockFeedProducts
-                          .map((product) => _buildProductCard(context, product))
-                          .toList(),
-                    )
-                  else
-                    ...mockFeedProducts
-                        .map((product) => Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: _buildProductCard(context, product),
-                            ))
-                        .toList(),
-                ],
-              ),
-            ),
-            Step(
-              title: const Text('Cart'),
-              subtitle: Text('${cart.length} item(s) in cart'),
-              isActive: currentStep >= 2,
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (cart.isEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(40),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Center(
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.shopping_cart_outlined,
-                              size: 48,
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Your cart is empty',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Go back and add some products',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  else ...[
-                    ...cart.entries.map(
-                      (entry) => Dismissible(
-                        key: ValueKey(entry.key.id),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(Icons.delete, color: Colors.white),
-                        ),
-                        onDismissed: (_) => setState(() => cart.remove(entry.key)),
-                        child: Card(
-                          elevation: 1,
-                          margin: const EdgeInsets.only(bottom: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  backgroundImage: NetworkImage(entry.key.image),
-                                  radius: 24,
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        entry.key.name,
-                                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                        maxLines: 1,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '₹${entry.key.rate.toStringAsFixed(0)} per ${entry.key.unit}',
-                                        style: Theme.of(context).textTheme.bodySmall,
-                                        overflow: TextOverflow.ellipsis,
-                                        maxLines: 1,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                QuantityStepper(
-                                  value: entry.value,
-                                  onChanged: (val) =>
-                                      setState(() => cart[entry.key] = val),
-                                  min: 1,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  '₹${(entry.key.rate * entry.value).toStringAsFixed(0)}',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).colorScheme.primary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Card(
-                      elevation: 3,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Order Summary',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const Divider(height: 24),
-                            _AmountRow(label: 'Subtotal', value: subtotal),
-                            const SizedBox(height: 8),
-                            _AmountRow(
-                              label: 'Discount (5%)',
-                              value: discount,
-                              color: Colors.green,
-                            ),
-                            const Divider(height: 24),
-                            _AmountRow(
-                              label: 'Grand Total',
-                              value: total,
-                              highlight: true,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Payment Status',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Card(
-                      elevation: 1,
-                      child: Column(
-                        children: [
-                          RadioListTile<String>(
-                            value: 'Paid',
-                            groupValue: paymentStatus,
-                            title: const Text('Paid'),
-                            subtitle: const Text('Payment received in full'),
-                            secondary: const Icon(Icons.check_circle, color: Colors.green),
-                            onChanged: (value) =>
-                                setState(() => paymentStatus = value ?? 'Pending'),
-                          ),
-                          const Divider(height: 1),
-                          RadioListTile<String>(
-                            value: 'Pending',
-                            groupValue: paymentStatus,
-                            title: const Text('Pending'),
-                            subtitle: const Text('Payment will be collected later'),
-                            secondary: const Icon(Icons.schedule, color: Colors.orange),
-                            onChanged: (value) =>
-                                setState(() => paymentStatus = value ?? 'Pending'),
-                          ),
-                          const Divider(height: 1),
-                          RadioListTile<String>(
-                            value: 'Partial',
-                            groupValue: paymentStatus,
-                            title: const Text('Partial'),
-                            subtitle: const Text('Part payment received'),
-                            secondary: const Icon(Icons.pie_chart, color: Colors.blue),
-                            onChanged: (value) =>
-                                setState(() => paymentStatus = value ?? 'Partial'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            Step(
-              title: const Text('Invoice'),
-              subtitle: const Text('Review and generate invoice'),
-              isActive: currentStep >= 3,
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primaryContainer,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Icon(
-                                  Icons.receipt_long,
-                                  color: Theme.of(context).colorScheme.primary,
-                                  size: 32,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Invoice Preview',
-                                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Review your order details',
-                                      style: Theme.of(context).textTheme.bodySmall,
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Divider(height: 32),
-                          _buildInfoTile(
-                            context,
-                            Icons.person,
-                            'Customer',
-                            selectedCustomerId != null
-                                ? mockCustomers.firstWhere((c) => c.id == selectedCustomerId!).name
-                                : 'Not selected',
-                          ),
-                          const SizedBox(height: 12),
-                          _buildInfoTile(
-                            context,
-                            Icons.shopping_bag,
-                            'Total Items',
-                            '${cart.length} item(s)',
-                          ),
-                          const SizedBox(height: 12),
-                          _buildInfoTile(
-                            context,
-                            Icons.payments,
-                            'Grand Total',
-                            '₹${total.toStringAsFixed(2)}',
-                          ),
-                          const SizedBox(height: 12),
-                          _buildInfoTile(
-                            context,
-                            Icons.account_balance_wallet,
-                            'Payment Status',
-                            paymentStatus,
-                          ),
-                          const Divider(height: 32),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: FilledButton.icon(
-                                  onPressed: cart.isEmpty ? null : () => _showInvoice('Print'),
-                                  icon: const Icon(Icons.print_outlined),
-                                  label: const Text('Print Invoice'),
-                                  style: FilledButton.styleFrom(
-                                    padding: const EdgeInsets.all(16),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: FilledButton.tonalIcon(
-                                  onPressed: cart.isEmpty ? null : () => _showInvoice('Share'),
-                                  icon: const Icon(Icons.ios_share),
-                                  label: const Text('Share Invoice'),
-                                  style: FilledButton.styleFrom(
-                                    padding: const EdgeInsets.all(16),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (cart.isEmpty) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.orange.shade200),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.warning_amber, color: Colors.orange.shade700),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Cart is empty. Please add items to generate invoice.',
-                              style: TextStyle(
-                                color: Colors.orange.shade900,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildProductCard(BuildContext context, FeedProduct product) {
+  Future<void> _handleStepContinue() async {
+    if (currentStep < 3) {
+      setState(() => currentStep += 1);
+    } else {
+      // Final step - save order
+      await _saveOrder();
+    }
+  }
+
+  Future<void> _saveOrder() async {
+    if (cart.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cart is empty')),
+      );
+      return;
+    }
+
+    if (selectedCustomer == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a customer')),
+      );
+      return;
+    }
+
+    final orderProvider = context.read<OrderProvider>();
+
+    // Set customer and cart items
+    orderProvider.setSelectedCustomer(selectedCustomer!.id, selectedCustomer!.name);
+    
+    // Clear existing cart and add new items
+    orderProvider.clearCart();
+    for (final entry in cart.entries) {
+      final item = OrderItemModel(
+        productId: entry.key.id,
+        productName: entry.key.name,
+        quantity: entry.value,
+        rate: entry.key.rate,
+        discount: 0,
+        total: entry.key.rate * entry.value,
+      );
+      orderProvider.addToCart(item);
+    }
+
+    final success = await orderProvider.createOrder(
+      orderType: 'feed',
+      discount: discount,
+    );
+
+    if (success && mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Order created successfully'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(orderProvider.error ?? 'Failed to create order'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
+  Step _buildCustomerStep() {
+    return Step(
+      title: const Text('Customer'),
+      subtitle: const Text('Select customer for this order'),
+      isActive: currentStep >= 0,
+      content: Consumer<CustomerProvider>(
+        builder: (context, customerProvider, child) {
+          if (customerProvider.isLoading && customerProvider.allCustomers.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final customers = customerProvider.allCustomers;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              DropdownButtonFormField<CustomerModel>(
+                value: selectedCustomer,
+                decoration: const InputDecoration(
+                  labelText: 'Search customers',
+                  prefixIcon: Icon(Icons.search),
+                  border: OutlineInputBorder(),
+                ),
+                items: customers
+                    .map(
+                      (c) => DropdownMenuItem(
+                        value: c,
+                        child: Text(
+                          '${c.name} • ${c.shopName ?? "No shop"}',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) => setState(() => selectedCustomer = value),
+              ),
+              const SizedBox(height: 20),
+              if (selectedCustomer != null)
+                Card(
+                  elevation: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Selected Customer',
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        const Divider(height: 20),
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                              child: Icon(
+                                Icons.person,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    selectedCustomer!.name,
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    selectedCustomer!.phone,
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            StatusBadge(
+                              label: '₹${selectedCustomer!.balance.abs().toStringAsFixed(0)}',
+                              color: selectedCustomer!.balance > 0
+                                  ? Colors.orange
+                                  : Colors.green,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Please select a customer to continue',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Step _buildProductsStep() {
+    final isDesktop = ResponsiveLayout.isDesktop(context);
+    
+    return Step(
+      title: const Text('Products'),
+      subtitle: const Text('Select products for this order'),
+      isActive: currentStep >= 1,
+      content: Consumer<FeedProductProvider>(
+        builder: (context, productProvider, child) {
+          if (productProvider.isLoading && productProvider.allProducts.isEmpty) {
+            return LoadingShimmer(
+              child: Column(
+                children: List.generate(
+                  4,
+                  (index) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Container(
+                      height: 70,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+
+          final products = productProvider.allProducts;
+
+          if (products.isEmpty) {
+            return const EmptyState(
+              icon: Icons.inventory_2_outlined,
+              title: 'No Products',
+              subtitle: 'Add products to your inventory first',
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isDesktop)
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  childAspectRatio: 3.5,
+                  children: products
+                      .map((product) => _buildProductCard(context, product))
+                      .toList(),
+                )
+              else
+                ...products
+                    .map((product) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _buildProductCard(context, product),
+                        ))
+                    .toList(),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Step _buildCartStep() {
+    return Step(
+      title: const Text('Cart'),
+      subtitle: Text('${cart.length} item(s) in cart'),
+      isActive: currentStep >= 2,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (cart.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(40),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.shopping_cart_outlined,
+                      size: 48,
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Your cart is empty',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Go back and add some products',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else ...[
+            ...cart.entries.map(
+              (entry) => Dismissible(
+                key: ValueKey(entry.key.id),
+                direction: DismissDirection.endToStart,
+                background: Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.delete, color: Colors.white),
+                ),
+                onDismissed: (_) => setState(() => cart.remove(entry.key)),
+                child: Card(
+                  elevation: 1,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                          child: Icon(
+                            Icons.inventory_2,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                entry.key.name,
+                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '₹${entry.key.rate.toStringAsFixed(0)} per ${entry.key.unit}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        QuantityStepper(
+                          value: entry.value,
+                          onChanged: (val) =>
+                              setState(() => cart[entry.key] = val),
+                          min: 1,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          '₹${(entry.key.rate * entry.value).toStringAsFixed(0)}',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              elevation: 3,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Order Summary',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Divider(height: 24),
+                    _AmountRow(label: 'Subtotal', value: subtotal),
+                    const SizedBox(height: 8),
+                    _AmountRow(
+                      label: 'Discount (5%)',
+                      value: discount,
+                      color: Colors.green,
+                    ),
+                    const Divider(height: 24),
+                    _AmountRow(
+                      label: 'Grand Total',
+                      value: total,
+                      highlight: true,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Payment Status',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              elevation: 1,
+              child: Column(
+                children: [
+                  RadioListTile<String>(
+                    value: 'Paid',
+                    groupValue: paymentStatus,
+                    title: const Text('Paid'),
+                    subtitle: const Text('Payment received in full'),
+                    secondary: const Icon(Icons.check_circle, color: Colors.green),
+                    onChanged: (value) =>
+                        setState(() => paymentStatus = value ?? 'Pending'),
+                  ),
+                  const Divider(height: 1),
+                  RadioListTile<String>(
+                    value: 'Pending',
+                    groupValue: paymentStatus,
+                    title: const Text('Pending'),
+                    subtitle: const Text('Payment will be collected later'),
+                    secondary: const Icon(Icons.schedule, color: Colors.orange),
+                    onChanged: (value) =>
+                        setState(() => paymentStatus = value ?? 'Pending'),
+                  ),
+                  const Divider(height: 1),
+                  RadioListTile<String>(
+                    value: 'Partially Paid',
+                    groupValue: paymentStatus,
+                    title: const Text('Partial'),
+                    subtitle: const Text('Part payment received'),
+                    secondary: const Icon(Icons.pie_chart, color: Colors.blue),
+                    onChanged: (value) =>
+                        setState(() => paymentStatus = value ?? 'Partially Paid'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Step _buildInvoiceStep() {
+    return Step(
+      title: const Text('Invoice'),
+      subtitle: const Text('Review and generate invoice'),
+      isActive: currentStep >= 3,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.receipt_long,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Invoice Preview',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Review your order details',
+                              style: Theme.of(context).textTheme.bodySmall,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 32),
+                  _buildInfoTile(
+                    context,
+                    Icons.person,
+                    'Customer',
+                    selectedCustomer?.name ?? 'Not selected',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildInfoTile(
+                    context,
+                    Icons.shopping_bag,
+                    'Total Items',
+                    '${cart.length} item(s)',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildInfoTile(
+                    context,
+                    Icons.payments,
+                    'Grand Total',
+                    '₹${total.toStringAsFixed(2)}',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildInfoTile(
+                    context,
+                    Icons.account_balance_wallet,
+                    'Payment Status',
+                    paymentStatus,
+                  ),
+                  const Divider(height: 32),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: cart.isEmpty ? null : () => _showInvoice('Print'),
+                          icon: const Icon(Icons.print_outlined),
+                          label: const Text('Print Invoice'),
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.all(16),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton.tonalIcon(
+                          onPressed: cart.isEmpty ? null : () => _showInvoice('Share'),
+                          icon: const Icon(Icons.ios_share),
+                          label: const Text('Share Invoice'),
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.all(16),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (cart.isEmpty) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber, color: Colors.orange.shade700),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Cart is empty. Please add items to generate invoice.',
+                      style: TextStyle(
+                        color: Colors.orange.shade900,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductCard(BuildContext context, FeedProductModel product) {
     final isInCart = cart.containsKey(product);
     
     return Card(
@@ -591,8 +727,11 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
       ),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundImage: NetworkImage(product.image),
-          radius: 24,
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          child: Icon(
+            Icons.inventory_2,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
         title: Text(
           product.name,
@@ -609,11 +748,11 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
           maxLines: 1,
         ),
         trailing: FilledButton.icon(
-          onPressed: () {
+          onPressed: product.stock > 0 ? () {
             setState(() {
               cart.update(product, (value) => value + 1, ifAbsent: () => 1);
             });
-          },
+          } : null,
           style: FilledButton.styleFrom(
             backgroundColor: isInCart
                 ? Theme.of(context).colorScheme.primary
@@ -623,18 +762,13 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
                 : Theme.of(context).colorScheme.onPrimaryContainer,
           ),
           icon: Icon(isInCart ? Icons.add_shopping_cart : Icons.add, size: 18),
-          label: Text(isInCart ? 'Added' : 'Add'),
+          label: Text(isInCart ? 'Added' : (product.stock > 0 ? 'Add' : 'Out')),
         ),
       ),
     );
   }
 
   InvoiceData _generateInvoiceData() {
-    final customer = mockCustomers.firstWhere(
-      (c) => c.id == selectedCustomerId,
-      orElse: () => mockCustomers.first,
-    );
-
     final items = cart.entries.map((entry) {
       return InvoiceItem(
         name: entry.key.name,
@@ -648,9 +782,9 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
     return InvoiceData(
       invoiceNumber: 'INV-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
       date: DateTime.now(),
-      customerName: customer.name,
-      customerPhone: customer.phone,
-      customerAddress: customer.shopName,
+      customerName: selectedCustomer?.name ?? 'Walk-in Customer',
+      customerPhone: selectedCustomer?.phone ?? '',
+      customerAddress: selectedCustomer?.shopName ?? '',
       items: items,
       subtotal: subtotal,
       discount: discount,
@@ -670,7 +804,6 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
       await InvoiceGenerator.show(context, data: invoiceData);
     }
   }
-}
 
   Widget _buildInfoTile(BuildContext context, IconData icon, String label, String value) {
     return Row(
@@ -703,6 +836,7 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
       ],
     );
   }
+}
 
 class _AmountRow extends StatelessWidget {
   const _AmountRow({
