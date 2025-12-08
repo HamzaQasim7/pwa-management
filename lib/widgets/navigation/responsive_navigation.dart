@@ -26,12 +26,16 @@ class ResponsiveNavigation extends StatelessWidget {
     required this.onDestinationSelected,
     required this.destinations,
     required this.child,
+    this.isDarkMode = false,
+    this.onThemeChanged,
   });
 
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
   final List<NavDestination> destinations;
   final Widget child;
+  final bool isDarkMode;
+  final ValueChanged<bool>? onThemeChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +47,8 @@ class ResponsiveNavigation extends StatelessWidget {
             selectedIndex: selectedIndex,
             onDestinationSelected: onDestinationSelected,
             destinations: destinations,
+            isDarkMode: isDarkMode,
+            onThemeChanged: onThemeChanged,
           ),
           Expanded(child: child),
         ],

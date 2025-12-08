@@ -88,6 +88,8 @@ class _MainShellState extends State<MainShell> {
         selectedIndex: currentIndex,
         onDestinationSelected: (index) => setState(() => currentIndex = index),
         destinations: destinations,
+        isDarkMode: widget.isDarkMode,
+        onThemeChanged: widget.onThemeChanged,
         child: PageStorage(
           bucket: bucket,
           child: IndexedStack(index: currentIndex, children: screenList),
@@ -102,6 +104,8 @@ class _MainShellState extends State<MainShell> {
         selectedIndex: currentIndex,
         onDestinationSelected: (index) => setState(() => currentIndex = index),
         destinations: destinations,
+        isDarkMode: widget.isDarkMode,
+        onThemeChanged: widget.onThemeChanged,
         child: PageStorage(
           bucket: bucket,
           child: IndexedStack(index: currentIndex, children: screenList),

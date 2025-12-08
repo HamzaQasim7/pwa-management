@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../screens/notifications/notifications_screen.dart';
+import '../../screens/settings/settings_screen.dart';
 import '../../utils/responsive_layout.dart';
 import 'modern_sidebar.dart';
 import 'responsive_navigation.dart';
@@ -13,11 +15,15 @@ class WebSidebar extends StatelessWidget {
     required this.selectedIndex,
     required this.onDestinationSelected,
     required this.destinations,
+    this.isDarkMode = false,
+    this.onThemeChanged,
   });
 
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
   final List<NavDestination> destinations;
+  final bool isDarkMode;
+  final ValueChanged<bool>? onThemeChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -36,10 +42,21 @@ class WebSidebar extends StatelessWidget {
       onDestinationSelected: onDestinationSelected,
       destinations: sidebarDestinations,
       onSettingsTap: () {
-        // TODO: Navigate to settings
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => SettingsScreen(
+              isDark: isDarkMode,
+              onThemeChanged: onThemeChanged ?? (_) {},
+            ),
+          ),
+        );
       },
       onNotificationsTap: () {
-        // TODO: Navigate to notifications
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const NotificationsScreen(),
+          ),
+        );
       },
     );
   }

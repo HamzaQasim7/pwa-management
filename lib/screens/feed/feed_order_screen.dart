@@ -133,6 +133,22 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
     }
 
     final orderProvider = context.read<OrderProvider>();
+    final feedProductProvider = context.read<FeedProductProvider>();
+
+    // Validate stock availability before creating order
+    for (final entry in cart.entries) {
+      if (entry.key.stock < entry.value) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Insufficient stock for ${entry.key.name}. Available: ${entry.key.stock}, Requested: ${entry.value}'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+        return;
+      }
+    }
 
     // Set customer and cart items
     orderProvider.setSelectedCustomer(selectedCustomer!.id, selectedCustomer!.name);
@@ -157,6 +173,11 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
     );
 
     if (success && mounted) {
+      // Deduct stock for each product in the order
+      for (final entry in cart.entries) {
+        await feedProductProvider.deductStock(entry.key.id, entry.value);
+      }
+      
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -719,18 +740,28 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
 
   Widget _buildProductCard(BuildContext context, FeedProductModel product) {
     final isInCart = cart.containsKey(product);
+    final currentQty = cart[product] ?? 0;
+    final canAddMore = product.stock > currentQty;
+    final isOutOfStock = product.stock <= 0;
     
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
+        side: isOutOfStock ? BorderSide(
+          color: Theme.of(context).colorScheme.error.withOpacity(0.3),
+        ) : BorderSide.none,
       ),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          backgroundColor: isOutOfStock 
+              ? Theme.of(context).colorScheme.errorContainer
+              : Theme.of(context).colorScheme.primaryContainer,
           child: Icon(
             Icons.inventory_2,
-            color: Theme.of(context).colorScheme.primary,
+            color: isOutOfStock
+                ? Theme.of(context).colorScheme.error
+                : Theme.of(context).colorScheme.primary,
           ),
         ),
         title: Text(
@@ -742,13 +773,15 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
           maxLines: 1,
         ),
         subtitle: Text(
-          'Rs ${product.rate.toStringAsFixed(0)} • ${product.stock} ${product.unit} left',
-          style: Theme.of(context).textTheme.bodySmall,
+          'Rs ${product.rate.toStringAsFixed(0)} • ${product.stock} ${product.unit} left${isInCart ? ' (${currentQty} in cart)' : ''}',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: isOutOfStock ? Theme.of(context).colorScheme.error : null,
+          ),
           overflow: TextOverflow.ellipsis,
           maxLines: 1,
         ),
         trailing: FilledButton.icon(
-          onPressed: product.stock > 0 ? () {
+          onPressed: canAddMore ? () {
             setState(() {
               cart.update(product, (value) => value + 1, ifAbsent: () => 1);
             });
@@ -762,7 +795,13 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
                 : Theme.of(context).colorScheme.onPrimaryContainer,
           ),
           icon: Icon(isInCart ? Icons.add_shopping_cart : Icons.add, size: 18),
-          label: Text(isInCart ? 'Added' : (product.stock > 0 ? 'Add' : 'Out')),
+          label: Text(
+            isOutOfStock 
+                ? 'Out' 
+                : (isInCart && !canAddMore 
+                    ? 'Max' 
+                    : (isInCart ? 'Added' : 'Add')),
+          ),
         ),
       ),
     );
