@@ -1,51 +1,213 @@
-# Aftab Distributions (Frontend Only)
+# Aftab Distributions - VetCare Suite
 
-Flutter demo focused on high-fidelity UI for a veterinary distribution business. The project showcases feed distribution and medicine management workflows backed entirely by mock data and smooth Material 3 interactions.
+Full-stack Flutter application for veterinary business with feed distribution and medicine management modules. Features **offline-first architecture** with local Hive database and **Firebase cloud sync**.
 
-## Highlights
-- Dual modules (Feed & Medicine) with dedicated dashboards, product/inventory views, order & sales steppers, advanced reports, and customer tooling
-- Custom widgets (stat cards, product/medicine cards, badges, charts, stepper components, bottom sheets, drawers, etc.) for a cohesive design system
-- Responsive layouts, hero animations, shimmer placeholders, speed dial FAB, dismissible alerts, slidable rows, and draggable bottom sheets
-- Theme-aware typography via Google Fonts with light/dark toggles exposed in Settings (no external state management)
-- Rich mock dataset (10–15 entries/model) with charts powered by `fl_chart`, cached network images, and badges for live-looking KPIs
+## 🚀 Features
 
-## Getting Started
-1. Install Flutter 3.24+ on your machine.
-2. From this folder run:
-   ```bash
-   flutter pub get
-   flutter run
-   ```
-3. No backend or storage is wired yet—every interaction works off in-memory mock data.
+### Core Functionality
+- **Feed Distribution Module**: Product catalog, orders, inventory management, analytics
+- **Medicine Management Module**: Inventory, expiry tracking, sales wizard, invoices
+- **Customer Management**: Customer profiles, order history, payment tracking
+- **Reports Hub**: Comprehensive analytics and business insights
 
-## Key Packages
-- `google_fonts`, `fl_chart`, `flutter_svg`, `intl`
-- `cached_network_image`, `shimmer`, `flutter_slidable`, `badges`, `flutter_speed_dial`, `image_picker`
+### Technical Architecture
+- **Offline-First**: All operations work locally first using Hive database
+- **Cloud Sync**: Bidirectional sync with Firebase Firestore
+- **Image Storage**: Firebase Storage for product/medicine images
+- **Real-time Updates**: Stream-based data synchronization
+- **Conflict Resolution**: Configurable strategies (latest-wins, cloud-wins, local-wins)
 
-## Folder Structure
-```
-lib/
-  data/           // mock data + helper classes
-  models/         // feed products, medicines, customers, orders, sales
-  screens/        // splash, shell, feed, medicine, customers, settings, etc.
-  theme/          // Material 3 themes + typography helpers
-  widgets/        // reusable UI primitives (StatCard, ProductCard, Drawer, etc.)
-assets/
-  images/, illustrations/  // placeholder folders for future art/screenshots
-```
+## 📱 Screenshots
 
-## Screens & Flows
-- **Splash → Main Shell** with bottom navigation + drawer for deep links
-- **Feed module**: dashboard, product catalog with draggable add form, order stepper, analytic tabs
-- **Medicine module**: gradient dashboard, inventory grid, detail/info tabs, add-medicine form, expiry manager, sales wizard, invoice preview, deep analytics
-- **Customers**: list + detail view with order/payments tab set
-- **Reports Hub, Settings, Notifications** with Material 3 components and feedback patterns
-
-## Screenshot Placeholders
 Add your captures to `assets/illustrations/` and update the references below:
 - `assets/illustrations/feed_dashboard.png`
 - `assets/illustrations/medicine_dashboard.png`
 - `assets/illustrations/sales_wizard.png`
 
+## 🛠 Getting Started
+
+### Prerequisites
+- Flutter 3.24+ installed
+- Firebase project configured (optional for cloud sync)
+
+### Installation
+
+1. Clone the repository and navigate to the project folder
+
+2. Install dependencies:
+   ```bash
+   flutter pub get
+   ```
+
+3. Run the app:
+   ```bash
+   flutter run
+   ```
+
+### Firebase Configuration (Optional)
+
+To enable cloud sync:
+
+1. Create a Firebase project at [Firebase Console](https://console.firebase.google.com)
+
+2. Enable the following services:
+   - **Authentication** (Anonymous sign-in)
+   - **Cloud Firestore**
+   - **Firebase Storage**
+
+3. Add your Firebase configuration:
+   ```bash
+   flutterfire configure
+   ```
+
+4. Deploy security rules:
+   ```bash
+   firebase deploy --only firestore:rules,storage:rules
+   ```
+
+## 📦 Key Packages
+
+### UI & Design
+- `google_fonts` - Typography
+- `fl_chart` - Charts and analytics
+- `flutter_svg` - SVG support
+- `cached_network_image` - Image caching
+- `shimmer` - Loading placeholders
+- `flutter_slidable` - Swipe actions
+- `badges` - Notification badges
+- `flutter_speed_dial` - FAB menu
+
+### State Management
+- `provider` - State management
+
+### Local Database
+- `hive` & `hive_flutter` - Local NoSQL database
+
+### Firebase (Cloud Sync)
+- `firebase_core` - Firebase initialization
+- `cloud_firestore` - Cloud database
+- `firebase_auth` - Authentication
+- `firebase_storage` - File storage
+
+### Utilities
+- `uuid` - Unique ID generation
+- `connectivity_plus` - Network detection
+- `image_picker` - Camera/gallery access
+- `pdf` & `printing` - PDF generation
+- `share_plus` - Sharing functionality
+
+## 📁 Project Structure
+
+```
+lib/
+├── core/
+│   ├── database/         # Hive service & box definitions
+│   ├── network/          # Network connectivity
+│   ├── services/         # Sync service, image storage
+│   ├── theme/            # App theming
+│   └── utils/            # Utilities (UUID, date formatting)
+├── data/
+│   ├── datasources/      # Local & remote data sources
+│   │   ├── *_local_datasource.dart   # Hive operations
+│   │   └── *_remote_datasource.dart  # Firebase operations
+│   ├── models/           # Data models with Hive adapters
+│   └── repositories/     # Repository implementations
+├── domain/
+│   └── repositories/     # Repository interfaces
+├── presentation/
+│   └── providers/        # State providers
+├── screens/              # UI screens
+│   ├── feed/             # Feed module screens
+│   ├── medicine/         # Medicine module screens
+│   ├── customers/        # Customer management
+│   ├── home/             # Dashboard & reports
+│   ├── settings/         # App settings
+│   └── notifications/    # Notifications
+├── widgets/              # Reusable UI components
+├── firebase_options.dart # Firebase configuration
+└── main.dart             # App entry point
+```
+
+## 🔄 Sync Architecture
+
+### Data Flow
+
+```
+User Action → Local Database (Hive) → Sync Queue → Firebase (when online)
+                      ↑                                    ↓
+                      └────────── Pull Sync ───────────────┘
+```
+
+### Sync Features
+
+1. **Push Sync** (Local → Cloud)
+   - All changes saved locally first
+   - Queued for sync when offline
+   - Automatic sync when back online
+
+2. **Pull Sync** (Cloud → Local)
+   - Initial sync on app start
+   - Periodic refresh (every 5 minutes)
+   - Manual refresh available
+
+3. **Conflict Resolution**
+   - `latestWins` - Most recent change wins (default)
+   - `cloudWins` - Cloud data takes precedence
+   - `localWins` - Local data takes precedence
+
+### Firestore Structure
+
+```
+users/
+  {userId}/
+    customers/
+      {customerId}/
+    feedProducts/
+      {productId}/
+    medicines/
+      {medicineId}/
+    orders/
+      {orderId}/
+    sales/
+      {saleId}/
+```
+
+## 🔐 Security
+
+### Firestore Rules
+- User-based data isolation
+- Authentication required for all operations
+- Users can only access their own data
+
+### Storage Rules
+- Image upload restricted to authenticated users
+- Max file size: 5MB
+- Image format validation
+
+## 🧪 Testing
+
+### Offline Mode
+- Disconnect network and verify all operations work
+- Reconnect and verify sync completes
+
+### Sync Testing
+- Create data offline, verify sync when online
+- Modify same data on two devices, verify conflict resolution
+- Test with slow/intermittent connections
+
+## 📋 Future Enhancements
+
+- [ ] Multi-user collaboration
+- [ ] Push notifications for sync conflicts
+- [ ] Batch operations for large datasets
+- [ ] Image compression before upload
+- [ ] Offline image queue
+- [ ] Export/import data functionality
+
+## 📄 License
+
+This project is proprietary software for Aftab Distributions.
+
 ---
-Future backend/storage wiring can hook into the existing widgets with minimal refactoring thanks to clearly separated models and mock repositories.
+
+Built with ❤️ using Flutter & Firebase
