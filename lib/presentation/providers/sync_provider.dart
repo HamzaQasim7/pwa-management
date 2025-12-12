@@ -4,33 +4,37 @@ import 'package:flutter/foundation.dart';
 
 import '../../core/database/hive_service.dart';
 import '../../core/network/network_info.dart';
+import '../../core/services/sync_service.dart';
 
 /// Provider for managing sync state
 /// 
+/// Wraps the SyncService and provides UI-friendly access to sync functionality.
 /// Handles offline data synchronization status and operations.
-/// Monitors connectivity and pending sync items.
 class SyncProvider with ChangeNotifier {
-  bool _isSyncing = false;
+  final SyncService? _syncService;
+  
   bool _isOnline = true;
-  int _pendingCount = 0;
-  DateTime? _lastSyncTime;
-  String? _lastSyncError;
   bool _autoSyncEnabled = true;
-  Timer? _autoSyncTimer;
   StreamSubscription<bool>? _connectivitySubscription;
+  VoidCallback? _syncServiceListener;
 
-  SyncProvider() {
+  /// Create a SyncProvider with an optional SyncService
+  /// If no SyncService is provided, basic sync functionality is used
+  SyncProvider([this._syncService]) {
     _init();
   }
 
   // Getters
-  bool get isSyncing => _isSyncing;
+  bool get isSyncing => _syncService?.isSyncing ?? false;
+  bool get isPulling => _syncService?.isPulling ?? false;
   bool get isOnline => _isOnline;
-  int get pendingCount => _pendingCount;
-  DateTime? get lastSyncTime => _lastSyncTime;
-  String? get lastSyncError => _lastSyncError;
+  int get pendingCount => _syncService?.pendingCount ?? _getLocalPendingCount();
+  DateTime? get lastSyncTime => _syncService?.lastSyncTime;
+  DateTime? get lastPullTime => _syncService?.lastPullTime;
+  String? get lastSyncError => _syncService?.lastSyncError;
   bool get autoSyncEnabled => _autoSyncEnabled;
-  bool get hasPendingChanges => _pendingCount > 0;
+  bool get hasPendingChanges => pendingCount > 0;
+  bool get isCloudAvailable => _syncService?.isCloudAvailable ?? false;
 
   /// Initialize sync provider
   Future<void> _init() async {
@@ -41,72 +45,58 @@ class SyncProvider with ChangeNotifier {
     _connectivitySubscription = networkInfo.onConnectivityChanged.listen((isOnline) {
       _isOnline = isOnline;
       notifyListeners();
-      
-      // Sync when coming back online
-      if (isOnline && _pendingCount > 0) {
-        syncAll();
-      }
     });
 
-    // Check pending items
-    _updatePendingCount();
+    // Listen to sync service changes
+    if (_syncService != null) {
+      _syncServiceListener = () {
+        notifyListeners();
+      };
+      _syncService!.addListener(_syncServiceListener!);
+    }
 
-    // Start auto sync timer
-    _startAutoSyncTimer();
+    notifyListeners();
   }
 
-  /// Update pending count from sync queue
-  void _updatePendingCount() {
+  /// Get local pending count from Hive
+  int _getLocalPendingCount() {
     try {
-      _pendingCount = HiveService.syncQueueBox.length;
-      notifyListeners();
+      return HiveService.syncQueueBox.length;
     } catch (e) {
-      // Box might not be initialized yet
-      _pendingCount = 0;
+      return 0;
     }
   }
 
-  /// Start auto sync timer (every 5 minutes)
-  void _startAutoSyncTimer() {
-    _autoSyncTimer?.cancel();
-    if (_autoSyncEnabled) {
-      _autoSyncTimer = Timer.periodic(
-        const Duration(minutes: 5),
-        (_) => syncAll(),
-      );
-    }
-  }
-
-  /// Sync all pending changes
-  /// 
-  /// In this implementation, sync is handled locally only.
-  /// Firebase sync can be added later by implementing remote datasources.
+  /// Sync all pending changes (push and pull)
   Future<void> syncAll() async {
-    if (_isSyncing) return;
+    if (_syncService != null) {
+      await _syncService!.syncAll();
+    } else {
+      // Fallback: basic local sync
+      await _basicSync();
+    }
+  }
+
+  /// Pull all data from cloud
+  Future<void> pullFromCloud() async {
+    if (_syncService != null) {
+      await _syncService!.pullAllFromCloud();
+    }
+  }
+
+  /// Basic sync when no SyncService is available
+  Future<void> _basicSync() async {
     if (!_isOnline) {
-      _lastSyncError = 'No internet connection';
-      notifyListeners();
+      debugPrint('Cannot sync: offline');
       return;
     }
 
-    _isSyncing = true;
-    _lastSyncError = null;
-    notifyListeners();
-
     try {
-      // In offline-first mode, all data is already saved locally
-      // This is where Firebase sync would happen
-      
-      // For now, just mark all items as synced
+      // Mark all items as synced locally
       await _markAllAsSynced();
-      
-      _lastSyncTime = DateTime.now();
-      _updatePendingCount();
-    } catch (e) {
-      _lastSyncError = 'Sync failed: ${e.toString()}';
-    } finally {
-      _isSyncing = false;
       notifyListeners();
+    } catch (e) {
+      debugPrint('Basic sync error: $e');
     }
   }
 
@@ -170,29 +160,71 @@ class SyncProvider with ChangeNotifier {
   /// Toggle auto sync
   void setAutoSync(bool enabled) {
     _autoSyncEnabled = enabled;
-    if (enabled) {
-      _startAutoSyncTimer();
-    } else {
-      _autoSyncTimer?.cancel();
+    if (_syncService != null) {
+      if (enabled) {
+        // SyncService handles auto-sync internally
+        debugPrint('Auto sync enabled');
+      } else {
+        _syncService!.stopAutoSync();
+        debugPrint('Auto sync disabled');
+      }
     }
     notifyListeners();
   }
 
   /// Force refresh pending count
   void refreshPendingCount() {
-    _updatePendingCount();
+    _syncService?.refreshPendingCount();
+    notifyListeners();
   }
 
   /// Clear sync error
   void clearError() {
-    _lastSyncError = null;
+    _syncService?.clearError();
     notifyListeners();
   }
 
+  /// Force full sync (re-syncs everything)
+  Future<void> forceFullSync() async {
+    if (_syncService != null) {
+      await _syncService!.forceFullSync();
+    } else {
+      await _basicSync();
+    }
+  }
+
+  /// Get sync status summary
+  Map<String, dynamic> getSyncStatus() {
+    return _syncService?.getSyncStatus() ?? {
+      'isSyncing': false,
+      'isPulling': false,
+      'pendingCount': pendingCount,
+      'lastSyncTime': null,
+      'lastPullTime': null,
+      'lastError': null,
+      'isCloudAvailable': false,
+      'conflictResolution': 'latestWins',
+    };
+  }
+
+  /// Set conflict resolution strategy
+  void setConflictResolution(ConflictResolution strategy) {
+    if (_syncService != null) {
+      _syncService!.conflictResolution = strategy;
+      notifyListeners();
+    }
+  }
+
+  /// Get current conflict resolution strategy
+  ConflictResolution get conflictResolution =>
+      _syncService?.conflictResolution ?? ConflictResolution.latestWins;
+
   @override
   void dispose() {
-    _autoSyncTimer?.cancel();
     _connectivitySubscription?.cancel();
+    if (_syncService != null && _syncServiceListener != null) {
+      _syncService!.removeListener(_syncServiceListener!);
+    }
     super.dispose();
   }
 }
