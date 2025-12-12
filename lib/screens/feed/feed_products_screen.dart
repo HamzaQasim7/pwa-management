@@ -127,7 +127,7 @@ class _FeedProductsScreenState extends State<FeedProductsScreen> {
                 Flexible(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
-                    child: _buildProductForm(context),
+                    child: _buildProductForm(context, null, null, null, false),
                   ),
                 ),
               ],
@@ -140,6 +140,7 @@ class _FeedProductsScreenState extends State<FeedProductsScreen> {
       showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
+        
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -167,7 +168,7 @@ class _FeedProductsScreenState extends State<FeedProductsScreen> {
                       subtitle: 'Add a new feed product to inventory.',
                     ),
                     const SizedBox(height: 16),
-                    _buildProductForm(context),
+                    _buildProductForm(context, null, null, controller, false),
                   ],
                 ),
               );
@@ -178,7 +179,13 @@ class _FeedProductsScreenState extends State<FeedProductsScreen> {
     }
   }
 
-  Widget _buildProductForm(BuildContext context) {
+  Widget _buildProductForm(
+    BuildContext context, [
+    FeedProductProvider? provider,
+    String? productId,
+    ScrollController? scrollController,
+    bool isEdit = false,
+  ]) {
     return StatefulBuilder(
       builder: (context, setFormState) {
         return Column(
@@ -188,9 +195,9 @@ class _FeedProductsScreenState extends State<FeedProductsScreen> {
             ImagePickerWidget(
               label: 'Tap to attach product image',
               initialImage: _selectedImage,
-              onImageSelected: (imageBase64) {
+              onImageSelected: (imageData, isUrl) {
                 setFormState(() {
-                  _selectedImage = imageBase64;
+                  _selectedImage = imageData;
                 });
               },
             ),
@@ -291,7 +298,11 @@ class _FeedProductsScreenState extends State<FeedProductsScreen> {
             Consumer<FeedProductProvider>(
               builder: (context, provider, child) {
                 return FilledButton.icon(
-                  onPressed: provider.isLoading ? null : () => _saveProduct(context),
+                  onPressed: provider.isLoading
+                      ? null
+                      : () => isEdit
+                          ? _updateProduct(context, productId!)
+                          : _saveProduct(context),
                   icon: provider.isLoading
                       ? const SizedBox(
                           width: 20,
@@ -302,7 +313,11 @@ class _FeedProductsScreenState extends State<FeedProductsScreen> {
                           ),
                         )
                       : const Icon(Icons.check),
-                  label: Text(provider.isLoading ? 'Saving...' : 'Save Product'),
+                  label: Text(
+                    provider.isLoading
+                        ? 'Saving...'
+                        : (isEdit ? 'Update Product' : 'Save Product'),
+                  ),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.all(16),
                   ),
@@ -354,6 +369,49 @@ class _FeedProductsScreenState extends State<FeedProductsScreen> {
     }
   }
 
+  Future<void> _updateProduct(BuildContext context, String productId) async {
+    if (_nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter product name')),
+      );
+      return;
+    }
+
+    final provider = context.read<FeedProductProvider>();
+    final existingProduct = provider.products.firstWhere((p) => p.id == productId);
+    
+    final updatedProduct = existingProduct.copyWith(
+      name: _nameController.text.trim(),
+      category: _selectedCategory,
+      unit: _selectedUnit,
+      stock: int.tryParse(_stockController.text) ?? 0,
+      lowStockThreshold: int.tryParse(_lowStockController.text) ?? 10,
+      rate: double.tryParse(_rateController.text) ?? 0,
+      supplier: _supplierController.text.trim().isEmpty ? null : _supplierController.text.trim(),
+      image: _selectedImage,
+      updatedAt: DateTime.now(),
+    );
+
+    final success = await provider.updateProduct(updatedProduct);
+
+    if (success && mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Product updated successfully'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(provider.error ?? 'Failed to update product'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDesktop = ResponsiveLayout.isDesktop(context);
@@ -375,11 +433,7 @@ class _FeedProductsScreenState extends State<FeedProductsScreen> {
         title: const Text('Feed Products'),
         centerTitle: isDesktop,
         actions: [
-          IconButton(
-            icon: Icon(isGrid ? Icons.view_list_rounded : Icons.grid_view_rounded),
-            onPressed: () => setState(() => isGrid = !isGrid),
-            tooltip: isGrid ? 'List View' : 'Grid View',
-          ),
+          
           IconButton(
             icon: const Icon(Icons.filter_alt_outlined),
             onPressed: () => _showFilterSheet(context),
@@ -530,7 +584,7 @@ class _FeedProductsScreenState extends State<FeedProductsScreen> {
                                     final product = products[index];
                                     return _ProductCard(
                                       product: product,
-                                      onEdit: () => _showSnack('Edit ${product.name}'),
+                                      onEdit: () => _showEditProductSheet(product),
                                       onDelete: () => _confirmDelete(product),
                                     );
                                   },
@@ -551,7 +605,7 @@ class _FeedProductsScreenState extends State<FeedProductsScreen> {
                                         ),
                                         child: _ProductCard(
                                           product: product,
-                                          onEdit: () => _showSnack('Edit ${product.name}'),
+                                          onEdit: () => _showEditProductSheet(product),
                                           onDelete: () => _confirmDelete(product),
                                         ),
                                       ),
@@ -579,6 +633,125 @@ class _FeedProductsScreenState extends State<FeedProductsScreen> {
 
   void _showSnack(String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _showEditProductSheet(FeedProductModel product) {
+    // Populate form with product data
+    _nameController.text = product.name;
+    _stockController.text = product.stock.toString();
+    _rateController.text = product.rate.toStringAsFixed(2);
+    _supplierController.text = product.supplier ?? '';
+    _lowStockController.text = product.lowStockThreshold.toString();
+    _selectedCategory = product.category;
+    _selectedUnit = product.unit;
+    _selectedImage = product.image;
+    
+    final isDesktop = ResponsiveLayout.isDesktop(context);
+    final provider = context.read<FeedProductProvider>();
+    
+    if (isDesktop) {
+      showDialog<void>(
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.edit_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 32,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Edit Product',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              product.name,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                // Form content
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: _buildProductForm(context, provider, product.id, null, true),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else {
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        builder: (context) => DraggableScrollableSheet(
+          initialChildSize: 0.9,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) => SingleChildScrollView(
+            controller: scrollController,
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 12,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                BottomSheetHeader(
+                  title: 'Edit Product',
+                  subtitle: product.name,
+                ),
+                const SizedBox(height: 16),
+                _buildProductForm(context, provider, product.id, scrollController, true),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   void _confirmDelete(FeedProductModel product) {

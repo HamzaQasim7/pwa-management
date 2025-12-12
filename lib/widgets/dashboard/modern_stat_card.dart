@@ -1,20 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_shadows.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../utils/responsive_layout.dart';
 
-/// Modern Stat Card - 2025 Professional Design
-/// 
-/// Features:
-/// - Gradient icon container
-/// - Large value display
-/// - Trend indicators with colors
-/// - Progress bar with gradient
-/// - Comparison text
-/// - Smooth hover animations
 class ModernStatCard extends StatefulWidget {
   const ModernStatCard({
     super.key,
@@ -100,11 +90,7 @@ class _ModernStatCardState extends State<ModernStatCard>
   }
 
   List<Color> get _gradientColors {
-    return AppColors.getModuleGradientColors(widget.module);
-  }
-
-  Color get _primaryColor {
-    return AppColors.getModulePrimaryColor(widget.module);
+    return [Theme.of(context).colorScheme.primary.withOpacity(0.25), Theme.of(context).colorScheme.primary.withOpacity(0.25)];
   }
 
   @override
@@ -138,12 +124,12 @@ class _ModernStatCardState extends State<ModernStatCard>
                 width: cardWidth,
                 height: cardHeight,
                 decoration: BoxDecoration(
-                  color: AppColors.cardBackground,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusMD),
                   border: Border.all(
                     color: _isHovered
-                        ? _primaryColor.withOpacity(0.3)
-                        : AppColors.borderColor,
+                        ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                        : Theme.of(context).colorScheme.outline,
                     width: 1,
                   ),
                   boxShadow: _isHovered
@@ -176,7 +162,7 @@ class _ModernStatCardState extends State<ModernStatCard>
                         // Label
                         Text(
                           widget.label,
-                          style: AppTypography.label(color: AppColors.textMuted),
+                          style: AppTypography.label(color: Theme.of(context).colorScheme.onSurface),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -187,7 +173,7 @@ class _ModernStatCardState extends State<ModernStatCard>
                         Text(
                           widget.value,
                           style: AppTypography.numberLarge(
-                            color: AppColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -205,7 +191,7 @@ class _ModernStatCardState extends State<ModernStatCard>
                         if (widget.comparison != null)
                           Text(
                             widget.comparison!,
-                            style: AppTypography.caption(color: AppColors.textMuted),
+                            style: AppTypography.caption(color: Theme.of(context).colorScheme.onSurfaceVariant),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -234,7 +220,7 @@ class _ModernStatCardState extends State<ModernStatCard>
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: _primaryColor.withOpacity(0.25),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.25),
             offset: const Offset(0, 2),
             blurRadius: 6,
             spreadRadius: 0,
@@ -257,13 +243,13 @@ class _ModernStatCardState extends State<ModernStatCard>
     IconData trendIcon;
     
     if (isPositive) {
-      trendColor = AppColors.emeraldGreen;
+      trendColor = Theme.of(context).colorScheme.primary;
       trendIcon = Icons.trending_up;
     } else if (isNegative) {
-      trendColor = AppColors.red;
+      trendColor = Theme.of(context).colorScheme.error;
       trendIcon = Icons.trending_down;
     } else {
-      trendColor = AppColors.textMuted;
+      trendColor = Theme.of(context).colorScheme.onSurfaceVariant;
       trendIcon = Icons.trending_flat;
     }
 
@@ -303,7 +289,7 @@ class _ModernStatCardState extends State<ModernStatCard>
       child: Container(
         height: 3, // Reduced from 4 to 3
         decoration: BoxDecoration(
-          color: AppColors.borderColor,
+            color: Theme.of(context).colorScheme.outline,
           borderRadius: BorderRadius.circular(2),
         ),
         child: FractionallySizedBox(

@@ -1,10 +1,10 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'core/database/hive_service.dart';
-import 'core/services/image_storage_service.dart';
+// import 'core/services/data_seeder.dart'; // Disabled - No sample data
 import 'core/services/sync_service.dart';
+import 'core/services/image_storage_service.dart';
 import 'core/network/network_info.dart';
 import 'core/theme/modern_theme.dart';
 import 'data/datasources/customer_local_datasource.dart';
@@ -22,7 +22,6 @@ import 'data/repositories/feed_product_repository_impl.dart';
 import 'data/repositories/medicine_repository_impl.dart';
 import 'data/repositories/order_repository_impl.dart';
 import 'data/repositories/sale_repository_impl.dart';
-import 'firebase_options.dart';
 import 'presentation/providers/customer_provider.dart';
 import 'presentation/providers/feed_product_provider.dart';
 import 'presentation/providers/medicine_provider.dart';
@@ -32,23 +31,22 @@ import 'presentation/providers/settings_provider.dart';
 import 'presentation/providers/sync_provider.dart';
 import 'screens/main_shell.dart';
 import 'screens/splash_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
+// ...
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    debugPrint('Firebase initialized successfully');
-  } catch (e) {
-    debugPrint('Firebase initialization failed: $e');
-    // App will continue in offline-only mode
-  }
 
+await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+);
   // Initialize Hive database
   await HiveService.init();
+
+  // Seed initial data if needed (DISABLED - No sample data)
+  // await DataSeeder.seedAll();
 
   runApp(const VetCareApp());
 }
@@ -62,7 +60,6 @@ class VetCareApp extends StatefulWidget {
 
 class _VetCareAppState extends State<VetCareApp> {
   bool showSplash = true;
-  bool _isInitialized = false;
 
   // Services
   late final NetworkInfo _networkInfo;
@@ -76,7 +73,7 @@ class _VetCareAppState extends State<VetCareApp> {
   late final OrderLocalDatasource _orderLocalDatasource;
   late final SaleLocalDatasource _saleLocalDatasource;
 
-  // Datasources - Remote (Firebase)
+  // Datasources - Remote (for future Firebase integration)
   late final CustomerRemoteDatasource _customerRemoteDatasource;
   late final FeedProductRemoteDatasource _feedProductRemoteDatasource;
   late final MedicineRemoteDatasource _medicineRemoteDatasource;
@@ -94,7 +91,6 @@ class _VetCareAppState extends State<VetCareApp> {
   void initState() {
     super.initState();
     _initDependencies();
-    _initializeRemoteDatasources();
     _hideSplash();
   }
 
@@ -109,17 +105,14 @@ class _VetCareAppState extends State<VetCareApp> {
     _orderLocalDatasource = OrderLocalDatasource();
     _saleLocalDatasource = SaleLocalDatasource();
 
-    // Initialize remote datasources (Firebase)
+    // Initialize remote datasources (stub implementations for now)
     _customerRemoteDatasource = CustomerRemoteDatasource();
     _feedProductRemoteDatasource = FeedProductRemoteDatasource();
     _medicineRemoteDatasource = MedicineRemoteDatasource();
     _orderRemoteDatasource = OrderRemoteDatasource();
     _saleRemoteDatasource = SaleRemoteDatasource();
 
-    // Initialize image storage service
-    _imageStorageService = ImageStorageService();
-
-    // Initialize sync service with all datasources
+    // Initialize sync service
     _syncService = SyncService(
       networkInfo: _networkInfo,
       customerLocal: _customerLocalDatasource,
@@ -134,7 +127,10 @@ class _VetCareAppState extends State<VetCareApp> {
       saleRemote: _saleRemoteDatasource,
     );
 
-    // Initialize repositories (using local datasources - offline-first)
+    // Initialize image storage service
+    _imageStorageService = ImageStorageService();
+
+    // Initialize repositories
     _customerRepository = CustomerRepositoryImpl(_customerLocalDatasource);
     _feedProductRepository =
         FeedProductRepositoryImpl(_feedProductLocalDatasource);
@@ -143,50 +139,40 @@ class _VetCareAppState extends State<VetCareApp> {
     _saleRepository = SaleRepositoryImpl(_saleLocalDatasource);
   }
 
-  /// Initialize all remote datasources and perform initial sync
-  Future<void> _initializeRemoteDatasources() async {
-    try {
-      // Initialize all remote datasources concurrently
-      await Future.wait([
-        _customerRemoteDatasource.init(),
-        _feedProductRemoteDatasource.init(),
-        _medicineRemoteDatasource.init(),
-        _orderRemoteDatasource.init(),
-        _saleRemoteDatasource.init(),
-        _imageStorageService.init(),
-      ]);
-
-      debugPrint('All remote datasources initialized');
-
-      // Update sync service with initialized datasources
-      await _syncService.initializeRemoteDatasources();
-
-      // Perform initial pull sync if online
-      final isConnected = await _networkInfo.isConnected;
-      if (isConnected && _syncService.isCloudAvailable) {
-        debugPrint('Performing initial cloud sync...');
-        await _syncService.pullAllFromCloud();
-        debugPrint('Initial cloud sync completed');
-      }
-
-      setState(() {
-        _isInitialized = true;
-      });
-    } catch (e) {
-      debugPrint('Error initializing remote datasources: $e');
-      // App will continue in offline-only mode
-      setState(() {
-        _isInitialized = true;
-      });
-    }
-  }
-
   void _hideSplash() {
+    // Initialize remote datasources and image storage in background
+    _initializeCloudServices();
+    
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() => showSplash = false);
       }
     });
+  }
+
+  /// Initialize cloud services (Firebase auth, remote datasources, image storage)
+  Future<void> _initializeCloudServices() async {
+    try {
+      // Initialize remote datasources (this will authenticate with admin@aftab.com)
+      await _syncService.initializeRemoteDatasources();
+      
+      // Initialize image storage service
+      await _imageStorageService.init();
+      
+      debugPrint('✅ All cloud services initialized successfully');
+      
+      // Pull data from cloud on startup (restore data after uninstall/reinstall)
+      // This ensures data is restored even if local storage is cleared
+      final isConnected = await _networkInfo.isConnected;
+      if (isConnected && _syncService.isCloudAvailable) {
+        debugPrint('📥 Pulling data from cloud on startup...');
+        await _syncService.pullAllFromCloud();
+        debugPrint('✅ Data pulled from cloud successfully');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error initializing cloud services: $e');
+      // Continue without cloud services (offline mode)
+    }
   }
 
   @override
@@ -204,9 +190,9 @@ class _VetCareAppState extends State<VetCareApp> {
           create: (_) => SettingsProvider(),
         ),
 
-        // Sync provider with actual sync service
+        // Sync provider
         ChangeNotifierProvider(
-          create: (_) => SyncProvider(_syncService),
+          create: (_) => SyncProvider(),
         ),
 
         // Customer provider

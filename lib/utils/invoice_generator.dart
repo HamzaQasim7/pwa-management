@@ -200,7 +200,7 @@ class InvoiceGenerator {
                     (item) => pw.TableRow(
                       children: [
                         _buildTableCell(item.name, flex: 3),
-                        _buildTableCell('${item.quantity} ${item.unit}'),
+                        _buildTableCell('${item.quantity.toStringAsFixed(item.quantity % 1 == 0 ? 0 : 2)} ${item.unit}'),
                         _buildTableCell('Rs ${item.rate.toStringAsFixed(2)}'),
                         _buildTableCell('Rs ${item.amount.toStringAsFixed(2)}'),
                       ],
@@ -444,7 +444,7 @@ class InvoiceData {
 
 class InvoiceItem {
   final String name;
-  final int quantity;
+  final double quantity; // Changed to double to support custom quantities
   final String unit;
   final double rate;
   final double amount;
@@ -889,7 +889,7 @@ class _InvoicePreviewState extends State<InvoicePreview> {
                                     ),
                                     Expanded(
                                       child: Text(
-                                        '${item.quantity} ${item.unit}',
+                                        '${item.quantity.toStringAsFixed(item.quantity % 1 == 0 ? 0 : 2)} ${item.unit}',
                                         textAlign: TextAlign.center,
                                         style: const TextStyle(
                                           fontSize: 14,

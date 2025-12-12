@@ -5,6 +5,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 
+import 'firebase_auth_service.dart';
+
 /// Service for uploading and managing images in Firebase Storage
 /// 
 /// Handles image upload, download, and deletion for all entities
@@ -12,14 +14,17 @@ import 'package:path/path.dart' as path;
 class ImageStorageService {
   final FirebaseStorage _storage;
   final FirebaseAuth _auth;
+  final FirebaseAuthService _authService;
   
   bool _isInitialized = false;
 
   ImageStorageService({
     FirebaseStorage? storage,
     FirebaseAuth? auth,
+    FirebaseAuthService? authService,
   })  : _storage = storage ?? FirebaseStorage.instance,
-        _auth = auth ?? FirebaseAuth.instance;
+        _auth = auth ?? FirebaseAuth.instance,
+        _authService = authService ?? FirebaseAuthService();
 
   /// Check if Firebase Storage is available
   bool get isAvailable => _isInitialized;
@@ -33,9 +38,12 @@ class ImageStorageService {
   /// Initialize the image storage service
   Future<void> init() async {
     try {
-      if (_auth.currentUser == null) {
-        await _auth.signInAnonymously();
-        debugPrint('Firebase Storage: Signed in anonymously');
+      // Ensure admin authentication
+      final authenticated = await _authService.ensureAuthenticated();
+      if (!authenticated) {
+        debugPrint('Firebase Storage: Failed to authenticate admin');
+        _isInitialized = false;
+        return;
       }
       
       _isInitialized = true;

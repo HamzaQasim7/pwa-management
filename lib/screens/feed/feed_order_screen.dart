@@ -9,7 +9,7 @@ import '../../presentation/providers/feed_product_provider.dart';
 import '../../presentation/providers/order_provider.dart';
 import '../../utils/invoice_generator.dart';
 import '../../utils/responsive_layout.dart';
-import '../../widgets/quantity_stepper.dart';
+import '../../widgets/custom_quantity_input.dart';
 import '../../widgets/status_badge.dart';
 import '../../widgets/loading_shimmer.dart';
 import '../../widgets/empty_state.dart';
@@ -24,7 +24,7 @@ class FeedOrderScreen extends StatefulWidget {
 class _FeedOrderScreenState extends State<FeedOrderScreen> {
   int currentStep = 0;
   CustomerModel? selectedCustomer;
-  final Map<FeedProductModel, int> cart = {};
+  final Map<FeedProductModel, double> cart = {}; // Changed to double for custom quantities
   String paymentStatus = 'Pending';
   double _discountPercent = 0.0;
   final TextEditingController _discountController = TextEditingController();
@@ -140,13 +140,15 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
     // Only show warning if customer was expected but not selected
     // For now, we allow orders without customer
 
-    // Validate stock availability before creating order
+    // Validate stock availability before creating order (handle decimal quantities)
     for (final entry in cart.entries) {
-      if (entry.key.stock < entry.value) {
+      final requestedQty = entry.value;
+      final availableStock = entry.key.stock.toDouble();
+      if (availableStock < requestedQty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Insufficient stock for ${entry.key.name}. Available: ${entry.key.stock}, Requested: ${entry.value}'),
+              content: Text('Insufficient stock for ${entry.key.name}. Available: ${entry.key.stock} ${entry.key.unit}, Requested: ${requestedQty.toStringAsFixed(2)} ${entry.key.unit}'),
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
@@ -179,10 +181,10 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
       final item = OrderItemModel(
         productId: entry.key.id,
         productName: entry.key.name,
-        quantity: entry.value,
+        quantity: entry.value.toInt(), // Convert to int for model (rounds down, but we track decimal in calculation)
         rate: entry.key.rate,
         discount: 0,
-        total: entry.key.rate * entry.value,
+        total: entry.key.rate * entry.value, // Use decimal for accurate total
       );
       orderProvider.addToCart(item);
     }
@@ -195,9 +197,11 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
     );
 
     if (success && mounted) {
-      // Deduct stock for each product in the order
+      // Deduct stock for each product in the order (round decimal quantities)
       for (final entry in cart.entries) {
-        await feedProductProvider.deductStock(entry.key.id, entry.value);
+        // Round to nearest integer for stock deduction
+        final qtyToDeduct = entry.value.round();
+        await feedProductProvider.deductStock(entry.key.id, qtyToDeduct);
       }
       
       Navigator.pop(context);
@@ -509,11 +513,15 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        QuantityStepper(
+                        CustomQuantityInput(
                           value: entry.value,
                           onChanged: (val) =>
                               setState(() => cart[entry.key] = val),
-                          min: 1,
+                          min: 0.1,
+                          max: entry.key.stock.toDouble(),
+                          step: 0.1,
+                          unit: entry.key.unit,
+                          allowDecimals: true,
                         ),
                         const SizedBox(width: 12),
                         Text(
@@ -791,8 +799,8 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
 
   Widget _buildProductCard(BuildContext context, FeedProductModel product) {
     final isInCart = cart.containsKey(product);
-    final currentQty = cart[product] ?? 0;
-    final canAddMore = product.stock > currentQty;
+    final currentQty = cart[product] ?? 0.0;
+    final canAddMore = product.stock.toDouble() > currentQty;
     final isOutOfStock = product.stock <= 0;
     
     return Card(
@@ -824,7 +832,7 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
           maxLines: 1,
         ),
         subtitle: Text(
-          'Rs ${product.rate.toStringAsFixed(0)} • ${product.stock} ${product.unit} left${isInCart ? ' (${currentQty} in cart)' : ''}',
+          'Rs ${product.rate.toStringAsFixed(0)} • ${product.stock} ${product.unit} left${isInCart ? ' (${currentQty.toStringAsFixed(2)} ${product.unit} in cart)' : ''}',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: isOutOfStock ? Theme.of(context).colorScheme.error : null,
           ),
@@ -834,7 +842,7 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
         trailing: FilledButton.icon(
           onPressed: canAddMore ? () {
             setState(() {
-              cart.update(product, (value) => value + 1, ifAbsent: () => 1);
+              cart.update(product, (value) => value + 0.1, ifAbsent: () => 0.1);
             });
           } : null,
           style: FilledButton.styleFrom(
@@ -862,7 +870,7 @@ class _FeedOrderScreenState extends State<FeedOrderScreen> {
     final items = cart.entries.map((entry) {
       return InvoiceItem(
         name: entry.key.name,
-        quantity: entry.value,
+        quantity: entry.value, // Keep as double for invoice display
         unit: entry.key.unit,
         rate: entry.key.rate,
         amount: entry.key.rate * entry.value,

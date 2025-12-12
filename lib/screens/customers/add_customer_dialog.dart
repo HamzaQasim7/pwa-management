@@ -214,14 +214,16 @@ class _CustomerFormState extends State<_CustomerForm> {
     if (success && mounted) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Customer added successfully'),
+        SnackBar(
+          key: const ValueKey('customer_added_snackbar'),
+          content: const Text('Customer added successfully'),
           behavior: SnackBarBehavior.floating,
         ),
       );
     } else if (!success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          key: const ValueKey('customer_error_snackbar'),
           content: Text(provider.error ?? 'Failed to add customer'),
           behavior: SnackBarBehavior.floating,
           backgroundColor: Theme.of(context).colorScheme.error,
