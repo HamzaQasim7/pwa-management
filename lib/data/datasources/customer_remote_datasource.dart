@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../core/services/firebase_auth_service.dart';
+
 /// Remote datasource for Customer operations using Firebase Firestore
 /// 
 /// This datasource handles all Firebase operations for customers.
@@ -9,14 +11,17 @@ import 'package:flutter/foundation.dart';
 class CustomerRemoteDatasource {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
+  final FirebaseAuthService _authService;
   
   bool _isInitialized = false;
 
   CustomerRemoteDatasource({
     FirebaseFirestore? firestore,
     FirebaseAuth? auth,
+    FirebaseAuthService? authService,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth ?? FirebaseAuth.instance;
+        _auth = auth ?? FirebaseAuth.instance,
+        _authService = authService ?? FirebaseAuthService();
 
   /// Get Firestore collection reference for current user
   CollectionReference<Map<String, dynamic>> get _customersRef {
@@ -33,10 +38,12 @@ class CustomerRemoteDatasource {
       // Try to enable network to verify Firebase is available
       await _firestore.enableNetwork();
       
-      // Ensure anonymous auth if not logged in
-      if (_auth.currentUser == null) {
-        await _auth.signInAnonymously();
-        debugPrint('Firebase: Signed in anonymously');
+      // Ensure admin authentication
+      final authenticated = await _authService.ensureAuthenticated();
+      if (!authenticated) {
+        debugPrint('Firebase: Failed to authenticate admin');
+        _isInitialized = false;
+        return;
       }
       
       _isInitialized = true;

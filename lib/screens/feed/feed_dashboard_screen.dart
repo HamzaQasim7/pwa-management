@@ -122,7 +122,9 @@ class FeedDashboardScreen extends StatelessWidget {
                           trend: '$todaysOrders new today',
                         ),
                         StatCard(
+                          background: Theme.of(context).colorScheme.surface,
                           icon: Icons.hourglass_empty,
+                          valueColor: Theme.of(context).colorScheme.surface,
                           title: 'Pending',
                           value: 'Rs ${_formatAmount(pendingAmount)}',
                           trend: '$pendingOrders awaiting payment',

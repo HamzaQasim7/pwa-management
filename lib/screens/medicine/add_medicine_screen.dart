@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/models/medicine_model.dart';
 import '../../presentation/providers/medicine_provider.dart';
 import '../../utils/responsive_layout.dart';
 import '../../widgets/date_picker_field.dart';
 import '../../widgets/image_picker_widget.dart';
 
 class AddMedicineScreen extends StatefulWidget {
-  const AddMedicineScreen({super.key});
+  const AddMedicineScreen({super.key, this.medicineToEdit});
+
+  final MedicineModel? medicineToEdit;
 
   @override
   State<AddMedicineScreen> createState() => _AddMedicineScreenState();
@@ -65,6 +68,51 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
 
     final provider = context.read<MedicineProvider>();
 
+    // If editing, update existing medicine
+    if (widget.medicineToEdit != null) {
+      final updatedMedicine = widget.medicineToEdit!.copyWith(
+        name: _nameController.text.trim(),
+        genericName: _genericNameController.text.trim(),
+        category: _selectedCategory,
+        batchNo: _batchNoController.text.trim(),
+        mfgDate: _mfgDate,
+        expiryDate: _expiryDate,
+        manufacturer: _manufacturerController.text.trim(),
+        purchasePrice: double.tryParse(_purchasePriceController.text) ?? 0,
+        sellingPrice: double.tryParse(_sellingPriceController.text) ?? 0,
+        discount: double.tryParse(_discountController.text) ?? 0,
+        quantity: int.tryParse(_quantityController.text) ?? 0,
+        minStockLevel: int.tryParse(_minStockController.text) ?? 10,
+        unit: _selectedUnit,
+        storage: _storageController.text.trim().isEmpty ? null : _storageController.text.trim(),
+        description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
+        image: _selectedImage,
+        updatedAt: DateTime.now(),
+      );
+
+      final success = await provider.updateMedicine(updatedMedicine);
+
+      if (success && mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Medicine updated successfully'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else if (!success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(provider.error ?? 'Failed to update medicine'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Otherwise, add new medicine
     final success = await provider.addMedicine(
       name: _nameController.text.trim(),
       genericName: _genericNameController.text.trim(),
@@ -140,12 +188,12 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
                     const SizedBox(height: 16),
                     Container(
                       width: double.maxFinite,
-                      child: ImagePickerWidget(
+                      child:                       ImagePickerWidget(
                         label: 'Tap to choose medicine photo',
                         initialImage: _selectedImage,
-                        onImageSelected: (imageBase64) {
+                        onImageSelected: (imageData, isUrl) {
                           setState(() {
-                            _selectedImage = imageBase64;
+                            _selectedImage = imageData;
                           });
                         },
                       ),

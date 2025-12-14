@@ -9,7 +9,7 @@ import '../../presentation/providers/medicine_provider.dart';
 import '../../presentation/providers/sale_provider.dart';
 import '../../utils/invoice_generator.dart';
 import '../../utils/responsive_layout.dart';
-import '../../widgets/quantity_stepper.dart';
+import '../../widgets/custom_quantity_input.dart';
 import '../../widgets/status_badge.dart';
 import '../../widgets/loading_shimmer.dart';
 import '../../widgets/empty_state.dart';
@@ -24,7 +24,7 @@ class MedicineSalesScreen extends StatefulWidget {
 class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
   int currentStep = 0;
   CustomerModel? selectedCustomer;
-  final Map<MedicineModel, int> billItems = {};
+  final Map<MedicineModel, double> billItems = {}; // Changed to double for custom quantities
   String paymentMethod = 'Cash';
   String paymentStatus = 'Pending';
   double amountReceived = 0;
@@ -34,12 +34,12 @@ class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
 
   double get subtotal => billItems.entries
       .map((entry) => entry.key.sellingPrice * entry.value)
-      .fold(0, (value, element) => value + element);
+      .fold(0.0, (value, element) => value + element);
 
   double get discount => subtotal * (_discountPercent / 100);
   double get grandTotal => subtotal - discount;
   double get profit =>
-      billItems.entries.map((e) => (e.key.sellingPrice - e.key.purchasePrice) * e.value).fold(0, (a, b) => a + b);
+      billItems.entries.map((e) => (e.key.sellingPrice - e.key.purchasePrice) * e.value).fold(0.0, (a, b) => a + b);
 
   @override
   void initState() {
@@ -383,8 +383,8 @@ class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
   }
 
   Widget _buildMedicineCard(BuildContext context, MedicineModel medicine) {
-    final inBillQty = billItems[medicine] ?? 0;
-    final availableStock = medicine.quantity - inBillQty;
+    final inBillQty = billItems[medicine] ?? 0.0;
+    final availableStock = medicine.quantity.toDouble() - inBillQty;
     final canAddMore = availableStock > 0;
     final isOutOfStock = medicine.quantity <= 0;
     final isInBill = billItems.containsKey(medicine);
@@ -419,7 +419,7 @@ class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
           maxLines: 1,
         ),
         subtitle: Text(
-          'Stock ${medicine.quantity} • Batch ${medicine.batchNo}${isInBill ? ' (${inBillQty} in bill)' : ''}',
+          'Stock ${medicine.quantity} ${medicine.unit} • Batch ${medicine.batchNo}${isInBill ? ' (${inBillQty.toStringAsFixed(2)} ${medicine.unit} in bill)' : ''}',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: isOutOfStock ? Theme.of(context).colorScheme.error : null,
           ),
@@ -429,7 +429,8 @@ class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
         trailing: FilledButton.icon(
           onPressed: canAddMore ? () {
             setState(() {
-              billItems.update(medicine, (value) => value + 1, ifAbsent: () => 1);
+              // Add 0.1 for medicines (e.g., 100ml from 1000ml bottle)
+              billItems.update(medicine, (value) => value + 0.1, ifAbsent: () => 0.1);
             });
             _toast('Added ${medicine.name} to bill');
           } : null,
@@ -544,11 +545,15 @@ class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      QuantityStepper(
+                      CustomQuantityInput(
                         value: entry.value,
                         onChanged: (val) =>
                             setState(() => billItems[entry.key] = val),
-                        min: 1,
+                        min: 0.1,
+                        max: entry.key.quantity.toDouble(),
+                        step: 0.1,
+                        unit: entry.key.unit,
+                        allowDecimals: true,
                       ),
                       const SizedBox(width: 12),
                       Text(
@@ -926,10 +931,10 @@ class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
       saleProvider.addToCart(SaleItemModel(
         productId: medicine.id,
         productName: medicine.name,
-        quantity: quantity,
+        quantity: quantity.toInt(), // Convert to int for model (rounds down, but we track decimal in calculation)
         rate: medicine.sellingPrice,
         discount: 0,
-        total: itemTotal,
+        total: itemTotal, // Use decimal for accurate total
         purchasePrice: medicine.purchasePrice,
       ));
     }
@@ -941,9 +946,11 @@ class _MedicineSalesScreenState extends State<MedicineSalesScreen> {
     );
 
     if (success) {
-      // Deduct stock for each medicine in the sale
+      // Deduct stock for each medicine in the sale (round decimal quantities)
       for (final entry in billItems.entries) {
-        await medicineProvider.deductStock(entry.key.id, entry.value);
+        // Round to nearest integer for stock deduction
+        final qtyToDeduct = entry.value.round();
+        await medicineProvider.deductStock(entry.key.id, qtyToDeduct);
       }
       
       _toast('Sale recorded successfully!');

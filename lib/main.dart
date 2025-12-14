@@ -94,7 +94,6 @@ class _VetCareAppState extends State<VetCareApp> {
   void initState() {
     super.initState();
     _initDependencies();
-    _initializeRemoteDatasources();
     _hideSplash();
   }
 
@@ -134,7 +133,6 @@ class _VetCareAppState extends State<VetCareApp> {
       saleRemote: _saleRemoteDatasource,
     );
 
-    // Initialize repositories (using local datasources - offline-first)
     _customerRepository = CustomerRepositoryImpl(_customerLocalDatasource);
     _feedProductRepository =
         FeedProductRepositoryImpl(_feedProductLocalDatasource);
@@ -143,50 +141,40 @@ class _VetCareAppState extends State<VetCareApp> {
     _saleRepository = SaleRepositoryImpl(_saleLocalDatasource);
   }
 
-  /// Initialize all remote datasources and perform initial sync
-  Future<void> _initializeRemoteDatasources() async {
-    try {
-      // Initialize all remote datasources concurrently
-      await Future.wait([
-        _customerRemoteDatasource.init(),
-        _feedProductRemoteDatasource.init(),
-        _medicineRemoteDatasource.init(),
-        _orderRemoteDatasource.init(),
-        _saleRemoteDatasource.init(),
-        _imageStorageService.init(),
-      ]);
-
-      debugPrint('All remote datasources initialized');
-
-      // Update sync service with initialized datasources
-      await _syncService.initializeRemoteDatasources();
-
-      // Perform initial pull sync if online
-      final isConnected = await _networkInfo.isConnected;
-      if (isConnected && _syncService.isCloudAvailable) {
-        debugPrint('Performing initial cloud sync...');
-        await _syncService.pullAllFromCloud();
-        debugPrint('Initial cloud sync completed');
-      }
-
-      setState(() {
-        _isInitialized = true;
-      });
-    } catch (e) {
-      debugPrint('Error initializing remote datasources: $e');
-      // App will continue in offline-only mode
-      setState(() {
-        _isInitialized = true;
-      });
-    }
-  }
-
   void _hideSplash() {
+    // Initialize remote datasources and image storage in background
+    _initializeCloudServices();
+    
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() => showSplash = false);
       }
     });
+  }
+
+  /// Initialize cloud services (Firebase auth, remote datasources, image storage)
+  Future<void> _initializeCloudServices() async {
+    try {
+      // Initialize remote datasources (this will authenticate with admin@aftab.com)
+      await _syncService.initializeRemoteDatasources();
+      
+      // Initialize image storage service
+      await _imageStorageService.init();
+      
+      debugPrint('✅ All cloud services initialized successfully');
+      
+      // Pull data from cloud on startup (restore data after uninstall/reinstall)
+      // This ensures data is restored even if local storage is cleared
+      final isConnected = await _networkInfo.isConnected;
+      if (isConnected && _syncService.isCloudAvailable) {
+        debugPrint('📥 Pulling data from cloud on startup...');
+        await _syncService.pullAllFromCloud();
+        debugPrint('✅ Data pulled from cloud successfully');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error initializing cloud services: $e');
+      // Continue without cloud services (offline mode)
+    }
   }
 
   @override
@@ -204,9 +192,9 @@ class _VetCareAppState extends State<VetCareApp> {
           create: (_) => SettingsProvider(),
         ),
 
-        // Sync provider with actual sync service
+        // Sync provider
         ChangeNotifierProvider(
-          create: (_) => SyncProvider(_syncService),
+          create: (_) => SyncProvider(),
         ),
 
         // Customer provider

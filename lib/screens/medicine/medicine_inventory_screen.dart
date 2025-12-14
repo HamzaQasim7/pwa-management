@@ -134,6 +134,83 @@ class _MedicineInventoryScreenState extends State<MedicineInventoryScreen> {
     );
   }
 
+  void _showMedicineOptions(BuildContext context, Medicine medicine) {
+    // Find the medicine model from provider
+    final provider = context.read<MedicineProvider>();
+    final medicineModel = provider.allMedicines.firstWhere(
+      (m) => m.id == medicine.id,
+    );
+    
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Edit Medicine'),
+              onTap: () {
+                Navigator.pop(context);
+                _showEditMedicine(medicineModel);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              title: const Text('Delete Medicine', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context);
+                _confirmDelete(medicineModel);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditMedicine(MedicineModel medicine) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddMedicineScreen(medicineToEdit: medicine),
+      ),
+    );
+  }
+
+  void _confirmDelete(MedicineModel medicine) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Medicine?'),
+        content: Text('Are you sure you want to delete "${medicine.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<MedicineProvider>().deleteMedicine(medicine.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('${medicine.name} deleted')),
+              );
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDesktop = ResponsiveLayout.isDesktop(context);
@@ -269,9 +346,7 @@ class _MedicineInventoryScreenState extends State<MedicineInventoryScreen> {
                               onAdd: () => ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('${medicine.name} added to cart.')),
                               ),
-                              onMore: () => ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('More options for ${medicine.name}')),
-                              ),
+                              onMore: () => _showMedicineOptions(context, medicine),
                             );
                           },
                         );
