@@ -1,7 +1,7 @@
 {
-  "buildCommand": "bash build.sh || echo 'Build script not available, using pre-built files'",
+  "buildCommand": "bash build.sh",
   "outputDirectory": "build/web",
-  "installCommand": "echo 'Skipping install, using build script'",
+  "installCommand": "echo 'Install handled by build script'",
   "rewrites": [
     {
       "source": "/(.*)",

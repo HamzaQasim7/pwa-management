@@ -84,8 +84,12 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
         quantity: int.tryParse(_quantityController.text) ?? 0,
         minStockLevel: int.tryParse(_minStockController.text) ?? 10,
         unit: _selectedUnit,
-        storage: _storageController.text.trim().isEmpty ? null : _storageController.text.trim(),
-        description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
+        storage: _storageController.text.trim().isEmpty
+            ? null
+            : _storageController.text.trim(),
+        description: _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
         image: _selectedImage,
         updatedAt: DateTime.now(),
       );
@@ -93,21 +97,19 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
       final success = await provider.updateMedicine(updatedMedicine);
 
       if (success && mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Medicine updated successfully'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        // Pop with result to let parent screen show the SnackBar
+        Navigator.pop(context, 'Medicine updated successfully');
       } else if (!success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(provider.error ?? 'Failed to update medicine'),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        // Show error SnackBar on current screen (no navigation)
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(provider.error ?? 'Failed to update medicine'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
       }
       return;
     }
@@ -137,21 +139,19 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     );
 
     if (success && mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Medicine added successfully'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      // Pop with result to let parent screen show the SnackBar
+      Navigator.pop(context, 'Medicine added successfully');
     } else if (!success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(provider.error ?? 'Failed to add medicine'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+      // Show error SnackBar on current screen (no navigation)
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(provider.error ?? 'Failed to add medicine'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
     }
   }
 
@@ -188,7 +188,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
                     const SizedBox(height: 16),
                     Container(
                       width: double.maxFinite,
-                      child:                       ImagePickerWidget(
+                      child: ImagePickerWidget(
                         label: 'Tap to choose medicine photo',
                         initialImage: _selectedImage,
                         onImageSelected: (imageData, isUrl) {

@@ -10,18 +10,10 @@ class SplashScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.primary,
-                    Theme.of(context).colorScheme.secondary,
-                  ],
-                ),
-              ),
-              child: const Icon(Icons.pets, size: 48, color: Colors.white),
+            Image.asset(
+              'assets/images/vetcare-log.png',
+              width: 100,
+              height: 100,
             ),
             const SizedBox(height: 24),
             Text(

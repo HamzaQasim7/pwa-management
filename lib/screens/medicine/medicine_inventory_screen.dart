@@ -15,7 +15,8 @@ class MedicineInventoryScreen extends StatefulWidget {
   const MedicineInventoryScreen({super.key});
 
   @override
-  State<MedicineInventoryScreen> createState() => _MedicineInventoryScreenState();
+  State<MedicineInventoryScreen> createState() =>
+      _MedicineInventoryScreenState();
 }
 
 class _MedicineInventoryScreenState extends State<MedicineInventoryScreen> {
@@ -32,14 +33,19 @@ class _MedicineInventoryScreenState extends State<MedicineInventoryScreen> {
   }
 
   List<Medicine> _filterMedicines(List<MedicineModel> models) {
-    return models.where((m) {
-      final matchesPrice = m.sellingPrice >= priceRange.start && m.sellingPrice <= priceRange.end;
-      final matchesCategory = categoryFilters.isEmpty || categoryFilters.contains(m.category);
-      final matchesSearch = _searchQuery.isEmpty ||
-          m.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          m.genericName.toLowerCase().contains(_searchQuery.toLowerCase());
-      return matchesPrice && matchesCategory && matchesSearch;
-    }).map((model) => ModelConverters.medicineFromModel(model)).toList();
+    return models
+        .where((m) {
+          final matchesPrice = m.sellingPrice >= priceRange.start &&
+              m.sellingPrice <= priceRange.end;
+          final matchesCategory =
+              categoryFilters.isEmpty || categoryFilters.contains(m.category);
+          final matchesSearch = _searchQuery.isEmpty ||
+              m.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              m.genericName.toLowerCase().contains(_searchQuery.toLowerCase());
+          return matchesPrice && matchesCategory && matchesSearch;
+        })
+        .map((model) => ModelConverters.medicineFromModel(model))
+        .toList();
   }
 
   void _openFilters() {
@@ -66,7 +72,9 @@ class _MedicineInventoryScreenState extends State<MedicineInventoryScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('Inventory Filters', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const Text('Inventory Filters',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 12),
                       Align(
                         alignment: Alignment.centerLeft,
@@ -94,7 +102,8 @@ class _MedicineInventoryScreenState extends State<MedicineInventoryScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Text('Price Range Rs ${priceRange.start.toStringAsFixed(0)} - Rs ${priceRange.end.toStringAsFixed(0)}'),
+                      Text(
+                          'Price Range Rs ${priceRange.start.toStringAsFixed(0)} - Rs ${priceRange.end.toStringAsFixed(0)}'),
                       RangeSlider(
                         values: priceRange,
                         min: 0,
@@ -120,17 +129,27 @@ class _MedicineInventoryScreenState extends State<MedicineInventoryScreen> {
     );
   }
 
-  void _openAddMedicine() {
-    Navigator.push(
+  void _openAddMedicine() async {
+    final result = await Navigator.push<String>(
       context,
       MaterialPageRoute(builder: (_) => const AddMedicineScreen()),
     );
+    // Show SnackBar after navigation completes to avoid Hero tag conflicts
+    if (result != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _openDetail(Medicine medicine) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => MedicineDetailScreen(medicine: medicine)),
+      MaterialPageRoute(
+          builder: (_) => MedicineDetailScreen(medicine: medicine)),
     );
   }
 
@@ -140,7 +159,7 @@ class _MedicineInventoryScreenState extends State<MedicineInventoryScreen> {
     final medicineModel = provider.allMedicines.firstWhere(
       (m) => m.id == medicine.id,
     );
-    
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -160,7 +179,8 @@ class _MedicineInventoryScreenState extends State<MedicineInventoryScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text('Delete Medicine', style: TextStyle(color: Colors.red)),
+              title: const Text('Delete Medicine',
+                  style: TextStyle(color: Colors.red)),
               onTap: () {
                 Navigator.pop(context);
                 _confirmDelete(medicineModel);
@@ -173,13 +193,22 @@ class _MedicineInventoryScreenState extends State<MedicineInventoryScreen> {
     );
   }
 
-  void _showEditMedicine(MedicineModel medicine) {
-    Navigator.push(
+  void _showEditMedicine(MedicineModel medicine) async {
+    final result = await Navigator.push<String>(
       context,
       MaterialPageRoute(
         builder: (_) => AddMedicineScreen(medicineToEdit: medicine),
       ),
     );
+    // Show SnackBar after navigation completes to avoid Hero tag conflicts
+    if (result != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _confirmDelete(MedicineModel medicine) {
@@ -214,7 +243,7 @@ class _MedicineInventoryScreenState extends State<MedicineInventoryScreen> {
   @override
   Widget build(BuildContext context) {
     final isDesktop = ResponsiveLayout.isDesktop(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Medicine Inventory'),
@@ -272,89 +301,100 @@ class _MedicineInventoryScreenState extends State<MedicineInventoryScreen> {
                 ),
                 Expanded(
                   child: Consumer<MedicineProvider>(
-                builder: (context, provider, child) {
-                  if (provider.isLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+                    builder: (context, provider, child) {
+                      if (provider.isLoading) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
-                  if (provider.error != null) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('Error: ${provider.error}'),
-                          const SizedBox(height: 16),
-                          FilledButton(
-                            onPressed: () => provider.refresh(),
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  final filteredMedicines = _filterMedicines(provider.allMedicines);
-
-                  if (filteredMedicines.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.medication_outlined, size: 64, color: Colors.grey),
-                          const SizedBox(height: 16),
-                          const Text('No medicines found'),
-                          const SizedBox(height: 8),
-                          Text(
-                            _searchQuery.isNotEmpty || categoryFilters.isNotEmpty
-                                ? 'Try adjusting your filters'
-                                : 'Add your first medicine',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return RefreshIndicator(
-                    onRefresh: provider.refresh,
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final crossAxisCount = ResponsiveLayout.gridCrossAxisCount(
-                          context,
-                          mobile: 1,
-                          tablet: 2,
-                          desktop: 3,
-                        );
-                        return GridView.builder(
-                          padding: ResponsiveLayout.padding(context),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: crossAxisCount,
-                            childAspectRatio: crossAxisCount == 1 
-                                ? 2.5 
-                                : isDesktop 
-                                    ? 1.6 
-                                    : 1.8,
-                            mainAxisSpacing: ResponsiveLayout.spacing(context),
-                            crossAxisSpacing: ResponsiveLayout.spacing(context),
-                          ),
-                          itemCount: filteredMedicines.length,
-                          itemBuilder: (context, index) {
-                            final medicine = filteredMedicines[index];
-                            return MedicineCard(
-                              medicine: medicine,
-                              onTap: () => _openDetail(medicine),
-                              onAdd: () => ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('${medicine.name} added to cart.')),
+                      if (provider.error != null) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('Error: ${provider.error}'),
+                              const SizedBox(height: 16),
+                              FilledButton(
+                                onPressed: () => provider.refresh(),
+                                child: const Text('Retry'),
                               ),
-                              onMore: () => _showMedicineOptions(context, medicine),
+                            ],
+                          ),
+                        );
+                      }
+
+                      final filteredMedicines =
+                          _filterMedicines(provider.allMedicines);
+
+                      if (filteredMedicines.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.medication_outlined,
+                                  size: 64, color: Colors.grey),
+                              const SizedBox(height: 16),
+                              const Text('No medicines found'),
+                              const SizedBox(height: 8),
+                              Text(
+                                _searchQuery.isNotEmpty ||
+                                        categoryFilters.isNotEmpty
+                                    ? 'Try adjusting your filters'
+                                    : 'Add your first medicine',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      return RefreshIndicator(
+                        onRefresh: provider.refresh,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final crossAxisCount =
+                                ResponsiveLayout.gridCrossAxisCount(
+                              context,
+                              mobile: 1,
+                              tablet: 2,
+                              desktop: 3,
+                            );
+                            return GridView.builder(
+                              padding: ResponsiveLayout.padding(context),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: crossAxisCount,
+                                childAspectRatio: crossAxisCount == 1
+                                    ? 2.5
+                                    : isDesktop
+                                        ? 1.6
+                                        : 1.8,
+                                mainAxisSpacing:
+                                    ResponsiveLayout.spacing(context),
+                                crossAxisSpacing:
+                                    ResponsiveLayout.spacing(context),
+                              ),
+                              itemCount: filteredMedicines.length,
+                              itemBuilder: (context, index) {
+                                final medicine = filteredMedicines[index];
+                                return MedicineCard(
+                                  medicine: medicine,
+                                  onTap: () => _openDetail(medicine),
+                                  onAdd: () => ScaffoldMessenger.of(context)
+                                      .showSnackBar(
+                                    SnackBar(
+                                        content: Text(
+                                            '${medicine.name} added to cart.')),
+                                  ),
+                                  onMore: () =>
+                                      _showMedicineOptions(context, medicine),
+                                );
+                              },
                             );
                           },
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ],
             ),

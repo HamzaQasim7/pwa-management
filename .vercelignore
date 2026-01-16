@@ -1,0 +1,9 @@
+# Ignore files that shouldn't be deployed
+node_modules/
+.dart_tool/
+.pub/
+build/
+!build/web/
+*.log
+.DS_Store
+
